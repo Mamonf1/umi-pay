@@ -41,3 +41,24 @@ Work Log:
 Stage Summary:
 - Delivered: تطبيق ويب تفاعلي على بورت 3000 (معاينة: https://preview-chat-dd4c7349-5db4-42e9-882b-c4193f775ff4.space-z.ai/)
 - الهوية: ذهبي داكن فاخر مطابق للنموذج الأصلي، 5 شاشات موبايل تفاعلية + لوحة ويب + نظام تصميم موثق
+
+---
+Task ID: 3
+Agent: main (Z.ai)
+Task: بناء تطبيق موبايل حي لبوابة الدفع UMI PAY مربوط بقاعدة بيانات (طلب: "اريد تصميم تطبيق موبايل بوابة دفع مع ربطها بقواعد بيانات")
+
+Work Log:
+- مخطط Prisma كامل: User, Wallet, Merchant, Transaction, ChatThread, ChatMessage, FamilyMember + bun run db:push
+- بيانات تجريبية (prisma/seed.ts): 8 مستخدمين (فرد/تاجر/أبناء)، 3 تجار، 15 معاملة، 3 محادثات، حسابان فرعيان
+- 11 مسار API: login, home, contacts, transfer, topup, merchants, checkout, transactions, chat(GET/POST), chat/[id], family(GET/POST/PATCH)
+- منطق أعمال: moveMoney ذرّي ($transaction)، تحقق PIN، assertChildCanSpend (حد أسبوعي + تجميد)
+- واجهات RTL حية: دخول (حسابات تجريبية)، محفظة (رصيد+إحصاءات)، تحويل 3 خطوات، شحن، متاجر + بوابة دفع (معالجة/إيصال)، شات بتحويل مضمّن، عائلة (مصروف/حدود/تجميد)، سجل بفلاتر، ملف + QR
+- إصلاحات QA: home=null بعد الدخول (splash guard)، TabBar دائم عبر التبويبات، pb-24 لأوراق الإدخال (تغطية شريط التنقل)، 3 إصلاحات react-hooks/set-state-in-effect
+- تحقق E2E بالمتصفح: دخول أحمد → تحويل 50 لسارة (قيد UMI-W93B87E56) → دفع مقهى 34 (قيد متجر) → رسالة شات + تحويل 355 → مصروف 52 لخالد → إلغاء تجميد لينا → اختبار الحد: 60 نجح ثم 45 رُفضت ("المتبقي 40") → استعادة جلسة بعد reload ✓
+- الرصيد النهائي محسوب بدقة: 1959.75 = 2450.75 − 50 − 34 − 355 − 52
+- lint نظيف، لا أخطاء كونسول، القاعدة: 8 مستخدمين/20 معاملة/11 رسالة
+
+Stage Summary:
+- Delivered: تطبيق موبايل حي متصل بـ SQLite/Prisma على بورت 3000
+- Preview: https://preview-chat-dd4c7349-5db4-42e9-882b-c4193f775ff4.space-z.ai/
+- ديمو: 0551234567 أحمد | 0556789012 متجر الريان | 0553456789 خالد — الرمز 1234

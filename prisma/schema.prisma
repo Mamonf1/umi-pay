@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// UMI PAY — بوابة دفع: مخطط قاعدة البيانات
+// Users / Wallets / Transactions (Gateway) / Merchants / Chat / Family sub-accounts
 
 generator client {
   provider = "prisma-client-js"
@@ -14,19 +11,89 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String         @id @default(cuid())
+  name             String
+  phone            String         @unique
+  pin              String         @default("1234")
+  role             String         @default("individual") // individual | merchant | child
+  avatar           String         @default("👤")
+  wallet           Wallet?
+  merchant         Merchant?
+  sentMessages     ChatMessage[]  @relation("Sender")
+  threadsA         ChatThread[]   @relation("ThreadA")
+  threadsB         ChatThread[]   @relation("ThreadB")
+  familyLink       FamilyMember?  @relation("Child")
+  familiesAsParent FamilyMember[] @relation("Parent")
+  txFrom           Transaction[]  @relation("TxFrom")
+  txTo             Transaction[]  @relation("TxTo")
+  createdAt        DateTime       @default(now())
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Wallet {
+  id      String @id @default(cuid())
+  userId  String @unique
+  balance Float  @default(0)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Merchant {
+  id       String        @id @default(cuid())
+  name     String
+  category String
+  emoji    String
+  color    String        @default("#7b5bc7")
+  ownerId  String        @unique
+  owner    User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  txs      Transaction[]
+}
+
+model Transaction {
+  id         String    @id @default(cuid())
+  reference  String    @unique
+  type       String // transfer | topup | merchant | allowance
+  amount     Float
+  status     String    @default("completed") // completed | failed
+  note       String?
+  fromUserId String?
+  toUserId   String?
+  merchantId String?
+  from       User?     @relation("TxFrom", fields: [fromUserId], references: [id])
+  to         User?     @relation("TxTo", fields: [toUserId], references: [id])
+  merchant   Merchant? @relation(fields: [merchantId], references: [id])
+  createdAt  DateTime  @default(now())
+}
+
+model ChatThread {
+  id        String        @id @default(cuid())
+  userAId   String
+  userBId   String
+  userA     User          @relation("ThreadA", fields: [userAId], references: [id])
+  userB     User          @relation("ThreadB", fields: [userBId], references: [id])
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+
+  @@unique([userAId, userBId])
+}
+
+model ChatMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  senderId  String
+  kind      String     @default("text") // text | transfer
+  text      String?
+  amount    Float?
+  txId      String?    @unique
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    User       @relation("Sender", fields: [senderId], references: [id])
+  createdAt DateTime   @default(now())
+}
+
+model FamilyMember {
+  id          String  @id @default(cuid())
+  parentId    String
+  childId     String  @unique
+  weeklyLimit Float   @default(100)
+  frozen      Boolean @default(false)
+  parent      User    @relation("Parent", fields: [parentId], references: [id])
+  child       User    @relation("Child", fields: [childId], references: [id])
 }
