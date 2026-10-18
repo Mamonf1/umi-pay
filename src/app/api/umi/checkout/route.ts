@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     if (!user || !merchant) return fail("المستخدم أو التاجر غير موجود", 404);
     if (user.pin !== String(pin)) return fail("الرمز السري غير صحيح");
 
-    const isWallet = true; // الدفع من محفظة أومني (بطاقة مدى = محاكاة نفس المسار)
+    const isWallet = true; // الدفع من محفظة أومي (بطاقة مدى = محاكاة نفس المسار)
     if (isWallet && r2(user.wallet?.balance ?? 0) < amt) return fail("الرصيد غير كافٍ");
 
     const childErr = await assertChildCanSpend(userId, amt);

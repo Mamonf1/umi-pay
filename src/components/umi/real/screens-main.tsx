@@ -375,7 +375,7 @@ export function ProfileScreen({ me, onLogout, onClose }: { me: Me; onLogout: () 
           <span className="w-10 h-10 rounded-xl grid place-items-center text-umi-gold bg-white/5"><Smartphone className="w-5 h-5" /></span>
           <div className="flex-1">
             <p className="text-[12px] font-tajawal font-bold text-umi-cream">المحفظة الرئيسية</p>
-            <p className="text-[10px] font-tajawal text-umi-muted">أومني باي · ر.س</p>
+            <p className="text-[10px] font-tajawal text-umi-muted">أومي باي · ر.س</p>
           </div>
           <p className="font-cairo font-bold text-umi-gold text-sm" dir="ltr">{fmt(me.balance)}</p>
         </div>

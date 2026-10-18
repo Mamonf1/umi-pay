@@ -66,7 +66,7 @@ export function StoresScreen({ onNavigate }: { onNavigate?: (k: ScreenKey) => vo
         <div className="relative rounded-2xl p-3.5 mb-3 overflow-hidden bg-gradient-to-l from-umi-gold/25 via-umi-gold/10 to-transparent border border-umi-gold/30">
           <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-umi-gold/15 blur-xl" aria-hidden="true" />
           <p className="text-xs font-cairo font-extrabold text-umi-gold mb-0.5">خصم 20% كافي ليّن</p>
-          <p className="text-[10px] text-umi-cream/75 font-tajawal leading-relaxed">ادفع بأومني باي داخل المتجر واحصل على الخصم فوراً</p>
+          <p className="text-[10px] text-umi-cream/75 font-tajawal leading-relaxed">ادفع بأومي باي داخل المتجر واحصل على الخصم فوراً</p>
         </div>
 
         {/* stores */}
@@ -172,7 +172,7 @@ export function ChatScreen({ onNavigate }: { onNavigate?: (k: ScreenKey) => void
                   U
                 </span>
                 <span className="flex-1">
-                  <span className="block text-[10px] text-umi-muted font-tajawal">تحويل عبر أومني باي</span>
+                  <span className="block text-[10px] text-umi-muted font-tajawal">تحويل عبر أومي باي</span>
                   <span className="block text-sm font-cairo font-black text-umi-gold" dir="ltr" style={{ textAlign: "right" }}>
                     500.00 <span className="text-[10px] font-tajawal">ر.س</span>
                   </span>

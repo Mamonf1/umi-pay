@@ -184,7 +184,7 @@ export function ProcessingView({ label = "جارٍ تنفيذ العملية" }:
     <div className="h-full flex flex-col items-center justify-center bg-umi-bg">
       <div className="w-14 h-14 rounded-full border-[3px] border-umi-gold/25 border-t-umi-gold animate-spin" />
       <p className="mt-5 text-sm font-tajawal text-umi-cream">{label}…</p>
-      <p className="mt-1 text-[10px] font-tajawal text-umi-muted">تشفير وإرسال آمن عبر بوابة أومني</p>
+      <p className="mt-1 text-[10px] font-tajawal text-umi-muted">تشفير وإرسال آمن عبر بوابة أومي</p>
     </div>
   );
 }

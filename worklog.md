@@ -62,3 +62,22 @@ Stage Summary:
 - Delivered: تطبيق موبايل حي متصل بـ SQLite/Prisma على بورت 3000
 - Preview: https://preview-chat-dd4c7349-5db4-42e9-882b-c4193f775ff4.space-z.ai/
 - ديمو: 0551234567 أحمد | 0556789012 متجر الريان | 0553456789 خالد — الرمز 1234
+
+---
+Task ID: 4
+Agent: main (Z.ai)
+Task: تصحيح اسم المحفظة من «أومني» إلى «أومي باي UMI» في جميع المخرجات (طلب المستخدم: "اسم المحفظه أومي باي Umi وليس أومني")
+
+Work Log:
+- خطة التطوير PDF: استبدال 12 موضعاً في UMI_PAY_Development_Plan.html عبر sed
+- إعادة توليد PDF بوضع --nopaged (Chromium RTL) ثم ختم أرقام الصفحات عبر stamp_pages.py
+- تصحيح البيانات الوصفية في stamp_pages.py (title/subject/keywords) قبل الختم
+- تحقق pymupdf: 13 صفحة، 3185 كلمة، صفر «أومني»، 12 «أومي»، رقم صفحة في التذييل ✓
+- التطبيق الحي: تصحيح 12 موضعاً في 8 ملفات (screens/pads/app-shell/design-system/api/layout metadata)
+- فحص قاعدة البيانات db/custom.db: لا يوجد «أومني» داخل البيانات
+- تحقق الخادم: HTTP 200 على localhost:3000 وHTML المقدّم خالٍ من «أومني» بعد إعادة الترجمة الساخنة
+
+Stage Summary:
+- UMI_PAY_Development_Plan_final.pdf مسلّم بالاسم الصحيح «أومي باي UMI PAY» (13 صفحة)
+- التطبيق الحي على بورت 3000 يقدّم الاسم المصحح بالكامل
+- لا توجد أي بقايا للاسم القديم في: HTML الخطة، PDF، كود src/، prisma/، قاعدة البيانات

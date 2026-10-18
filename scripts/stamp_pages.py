@@ -6,7 +6,7 @@ import fitz
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 
-SRC = '/home/z/my-project/download/UMI_PAY_Development_Plan.pdf'
+SRC = '/home/z/my-project/download/UMI_PAY_Development_Plan_raw.pdf'
 OUT = '/home/z/my-project/download/UMI_PAY_Development_Plan_final.pdf'
 
 doc = fitz.open(SRC)
@@ -33,12 +33,12 @@ for i in range(n):
         page.show_pdf_page(page.rect, overlay, i)
 
 doc.set_metadata({
-    'title': 'خطة تطوير تطبيق أومني باي UMI PAY — من نموذج أولي إلى منتج قابل للتمويل',
+    'title': 'خطة تطوير تطبيق أومي باي UMI PAY — من نموذج أولي إلى منتج قابل للتمويل',
     'author': 'Z.ai',
-    'subject': 'خطة تطوير منتج: محفظة أومني باي الرقمية — Flutter، تصميم UX عربي، خارطة طريق 24 أسبوعاً وتقديرات مالية',
+    'subject': 'خطة تطوير منتج: محفظة أومي باي الرقمية — Flutter، تصميم UX عربي، خارطة طريق 24 أسبوعاً وتقديرات مالية',
     'creator': 'Z.ai PDF Workbench',
     'producer': 'Playwright + Chromium',
-    'keywords': 'UMI PAY, أومني باي, محفظة إلكترونية, خطة تطوير, Flutter, fintech',
+    'keywords': 'UMI PAY, أومي باي, محفظة إلكترونية, خطة تطوير, Flutter, fintech',
 })
 doc.save(OUT, garbage=3, deflate=True)
 print("saved:", OUT)

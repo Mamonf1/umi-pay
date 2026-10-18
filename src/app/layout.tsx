@@ -17,8 +17,8 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   title: "UMI PAY — بوابة الدفع | تطبيق موبايل حي",
   description:
-    "تطبيق موبايل لبوابة دفع أومني باي: محفظة، تحويلات، متاجر، تحويل داخل المحادثات، وحسابات أبناء بحدود إنفاق — متصل بقاعدة بيانات حية (Prisma + SQLite).",
-  keywords: ["UMI PAY", "أومني باي", "بوابة دفع", "محفظة رقمية", "fintech", "Flutter", "RTL"],
+    "تطبيق موبايل لبوابة دفع أومي باي: محفظة، تحويلات، متاجر، تحويل داخل المحادثات، وحسابات أبناء بحدود إنفاق — متصل بقاعدة بيانات حية (Prisma + SQLite).",
+  keywords: ["UMI PAY", "أومي باي", "بوابة دفع", "محفظة رقمية", "fintech", "Flutter", "RTL"],
   authors: [{ name: "Z.ai" }],
   openGraph: {
     title: "UMI PAY — بوابة الدفع | تطبيق موبايل حي",

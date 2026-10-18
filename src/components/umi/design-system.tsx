@@ -15,7 +15,7 @@ const COLORS = [
 ];
 
 const TYPO = [
-  { family: "Cairo — القاهرة", role: "العناوين والأرقام الكبيرة", weight: "ExtraBold 800 / Black 900", sample: "أومني باي — محفظتك الذكية", cls: "font-cairo font-black" },
+  { family: "Cairo — القاهرة", role: "العناوين والأرقام الكبيرة", weight: "ExtraBold 800 / Black 900", sample: "أومي باي — محفظتك الذكية", cls: "font-cairo font-black" },
   { family: "Tajawal — تجوّل", role: "النصوص والقوائم والتسميات", weight: "Regular 400 / Bold 700", sample: "حول الأموال فوراً داخل المحادثة بضغطة واحدة", cls: "font-tajawal font-normal" },
 ];
 

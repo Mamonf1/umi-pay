@@ -31,7 +31,7 @@ export function StoresScreen({
 
   return (
     <div className="h-full flex flex-col bg-umi-bg relative">
-      <ScreenHeader title="المتاجر" subtitle="متصلون ببوابة أومني للدفع" onBack={onExit} />
+      <ScreenHeader title="المتاجر" subtitle="متصلون ببوابة أومي للدفع" onBack={onExit} />
       <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto no-scrollbar">
         {cats.map((c) => (
           <button
@@ -140,7 +140,7 @@ function CheckoutSheet({
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-cairo font-bold text-umi-cream truncate">{merchant.name}</p>
-            <p className="text-[9px] font-tajawal text-umi-muted">دفع آمن · محفظة أومني</p>
+            <p className="text-[9px] font-tajawal text-umi-muted">دفع آمن · محفظة أومي</p>
           </div>
           <span className="text-[9px] font-tajawal text-umi-teal flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-umi-teal animate-umi-pulse" /> متصل
@@ -159,7 +159,7 @@ function CheckoutSheet({
               className="w-full h-11 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
               style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
             >
-              الدفع عبر بوابة أومني
+              الدفع عبر بوابة أومي
             </button>
           </div>
         </div>
