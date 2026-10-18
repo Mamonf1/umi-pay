@@ -1,5 +1,5 @@
 // UMI PAY — أنواع البيانات المشتركة
-export type Role = "individual" | "merchant" | "child";
+export type Role = "individual" | "merchant" | "child" | "admin";
 
 export interface Me {
   id: string;
@@ -101,6 +101,10 @@ export const TYPE_LABELS: Record<TxType, string> = {
 
 export const fmt = (n: number) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** تنسيق مختصر بدون كسور (للأعداد الكبيرة بوحدات OMI) */
+export const fmtInt = (n: number) =>
+  n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 /** وقت نسبي عربي */
 export function relTime(iso: string) {

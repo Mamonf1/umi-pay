@@ -8,7 +8,10 @@ import {
 } from "lucide-react";
 import { StatusBar } from "@/components/umi/phone-frame";
 import { ScreenHeader, TxRow } from "@/components/umi/real/pads";
+import { UmiLogo } from "@/components/umi/logo";
 import { api } from "@/lib/umi-client";
+import { useRates } from "@/lib/rates";
+import { omiToSyp, fmtSyp } from "@/lib/currency";
 import {
   fmt, relTime, TYPE_LABELS, type HomeData, type Me, type TxItem,
 } from "@/lib/umi-types";
@@ -40,24 +43,24 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
   );
 
   const demo = [
-    { label: "أحمد — ولي أمر", phone: "0551234567", avatar: "🧑🏻‍💼" },
-    { label: "متجر الريان — تاجر", phone: "0556789012", avatar: "🛒" },
-    { label: "خالد — حساب فرعي", phone: "0553456789", avatar: "👦🏻" },
-    { label: "سارة — مستخدمة", phone: "0552345678", avatar: "👩🏻" },
+    { label: "أحمد — ولي أمر", phone: "0551234567", avatar: "🧑🏻‍💼", wide: false },
+    { label: "متجر الريان — تاجر", phone: "0556789012", avatar: "🛒", wide: false },
+    { label: "خالد — حساب فرعي", phone: "0553456789", avatar: "👦🏻", wide: false },
+    { label: "سارة — مستخدمة", phone: "0552345678", avatar: "👩🏻", wide: false },
+    { label: "إدارة UMI — أدمن (تسعير العملة)", phone: "0500000000", avatar: "👑", wide: true },
   ];
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg px-6 pt-8 pb-6 overflow-y-auto no-scrollbar">
+    <div className="h-full flex flex-col bg-umi-bg px-6 pt-6 pb-6 overflow-y-auto no-scrollbar">
       <StatusBar />
-      <div className="text-center mt-6 mb-7">
-        <div
-          className="w-16 h-16 mx-auto rounded-3xl grid place-items-center font-cairo font-black text-3xl text-[#0a0416] umi-glow"
-          style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
-        >
-          U
+      <div className="text-center mt-4 mb-5">
+        {/* الشعار الكبير */}
+        <div className="flex justify-center mb-4">
+          <UmiLogo size={132} />
         </div>
-        <h1 className="font-cairo font-black text-2xl gold-text mt-3">UMI PAY</h1>
-        <p className="text-[11px] font-tajawal text-umi-muted mt-1">محفظتك وبوابة الدفع — كل عميلة تُحفظ في قاعدة البيانات</p>
+        <h1 className="font-cairo font-black text-[38px] leading-none gold-text tracking-tight">UMI PAY</h1>
+        <p className="text-[12px] font-tajawal text-umi-muted mt-2.5">محفظة وبوابة دفع بعملة OMI — كل عملية تُحفظ في قاعدة البيانات</p>
+        <RateChip />
       </div>
 
       <label className="text-[11px] font-tajawal font-bold text-umi-muted mb-1 block">رقم الجوال</label>
@@ -102,7 +105,7 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
             type="button"
             disabled={busy}
             onClick={() => doLogin(d.phone, "1234")}
-            className="umi-card rounded-xl px-2.5 py-2.5 text-right active:bg-white/10 transition-colors"
+            className={`umi-card rounded-xl px-2.5 py-2.5 text-right active:bg-white/10 transition-colors ${d.wide ? "col-span-2" : ""}`}
           >
             <span className="text-lg block mb-0.5">{d.avatar}</span>
             <span className="block text-[11px] font-tajawal font-bold text-umi-cream leading-tight">{d.label}</span>
@@ -110,6 +113,24 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* شريحة تسعير العملة — OMI ثابتة مقابل الدولار والليرة البديلة */
+function RateChip() {
+  const { rates } = useRates();
+  const omiSyp = omiToSyp(1, rates.usdSyp);
+  return (
+    <div className="inline-flex items-center gap-2 mt-3 px-3.5 py-1.5 rounded-full umi-card">
+      <span className="w-1.5 h-1.5 rounded-full bg-umi-teal animate-umi-pulse" />
+      <span className="text-[10px] font-tajawal font-bold text-umi-cream" dir="ltr">
+        1 OMI = 0.0005$
+      </span>
+      <span className="w-px h-3 bg-white/10" />
+      <span className="text-[10px] font-tajawal text-umi-muted" dir="ltr">
+        ≈ {fmtSyp(omiSyp)} ل.س
+      </span>
     </div>
   );
 }
@@ -131,6 +152,8 @@ export function HomeScreen({
   onOpenProfile: () => void;
 }) {
   const { me, weekIn, weekOut, txs } = data;
+  const { rates } = useRates();
+  const sypRate = rates.usdSyp;
   const isMerchant = me.role === "merchant";
   const actions = [
     { key: "send" as const, label: "تحويل", icon: <ArrowUpRight className="w-5 h-5" strokeWidth={1.9} /> },
@@ -180,22 +203,29 @@ export function HomeScreen({
               {hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          <p className="font-cairo font-black text-[34px] leading-none gold-text" dir="ltr">
-            {hidden ? "••••" : fmt(me.balance)}
-            <span className="text-sm text-umi-muted mr-2">ر.س</span>
+          <p className="font-cairo font-black text-[30px] leading-none gold-text tracking-tight" dir="ltr">
+            {hidden ? "••••••" : fmt(me.balance)}
+            <span className="text-sm text-umi-muted mr-2">OMI</span>
+          </p>
+          <p className="text-[10px] font-tajawal text-umi-muted mt-1.5" dir="ltr">
+            {hidden ? "≈ •••• ل.س" : `≈ ${fmtSyp(omiToSyp(me.balance, sypRate))} ل.س`}
           </p>
           <div className="flex gap-2 mt-4">
             <span className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
               <span className="flex items-center gap-1 text-[9px] font-tajawal text-umi-muted mb-0.5">
                 <ArrowDownLeft className="w-3 h-3 text-umi-gold" /> وارد (7 أيام)
               </span>
-              <span className="font-cairo font-bold text-[13px] text-umi-gold" dir="ltr">{fmt(weekIn)}</span>
+              <span className="font-cairo font-bold text-[13px] text-umi-gold" dir="ltr">
+                {fmt(weekIn)}<span className="text-[9px] text-umi-muted"> OMI</span>
+              </span>
             </span>
             <span className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
               <span className="flex items-center gap-1 text-[9px] font-tajawal text-umi-muted mb-0.5">
                 <ArrowUpRight className="w-3 h-3 text-umi-purplight" /> صادر (7 أيام)
               </span>
-              <span className="font-cairo font-bold text-[13px] text-umi-cream" dir="ltr">{fmt(weekOut)}</span>
+              <span className="font-cairo font-bold text-[13px] text-umi-cream" dir="ltr">
+                {fmt(weekOut)}<span className="text-[9px] text-umi-muted"> OMI</span>
+              </span>
             </span>
           </div>
         </section>
@@ -357,7 +387,9 @@ export function QrSheet({ me, onClose }: { me: Me; onClose: () => void }) {
 
 /* ============ الملف الشخصي ============ */
 export function ProfileScreen({ me, onLogout, onClose }: { me: Me; onLogout: () => void; onClose: () => void }) {
-  const roleLabel = me.role === "merchant" ? "حساب تاجر" : me.role === "child" ? "حساب فرعي" : "حساب شخصي";
+  const { rates } = useRates();
+  const sypRate = rates.usdSyp;
+  const roleLabel = me.role === "merchant" ? "حساب تاجر" : me.role === "child" ? "حساب فرعي" : me.role === "admin" ? "أدمن المحفظة" : "حساب شخصي";
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
       <ScreenHeader title="حسابي" onBack={onClose} />
@@ -374,10 +406,10 @@ export function ProfileScreen({ me, onLogout, onClose }: { me: Me; onLogout: () 
         <div className="rounded-2xl p-4 umi-card mb-3 flex items-center gap-3">
           <span className="w-10 h-10 rounded-xl grid place-items-center text-umi-gold bg-white/5"><Smartphone className="w-5 h-5" /></span>
           <div className="flex-1">
-            <p className="text-[12px] font-tajawal font-bold text-umi-cream">المحفظة الرئيسية</p>
-            <p className="text-[10px] font-tajawal text-umi-muted">أومي باي · ر.س</p>
+            <p className="text-[12px] font-tajawal font-bold text-umi-cream">محفظة OMI الرئيسية</p>
+            <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(me.balance, sypRate))} ل.س</p>
           </div>
-          <p className="font-cairo font-bold text-umi-gold text-sm" dir="ltr">{fmt(me.balance)}</p>
+          <p className="font-cairo font-bold text-umi-gold text-sm" dir="ltr">{fmt(me.balance)}<span className="text-[9px] text-umi-muted"> OMI</span></p>
         </div>
 
         <div className="rounded-2xl p-4 umi-card mb-6">

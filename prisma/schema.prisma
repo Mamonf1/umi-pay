@@ -15,7 +15,7 @@ model User {
   name             String
   phone            String         @unique
   pin              String         @default("1234")
-  role             String         @default("individual") // individual | merchant | child
+  role             String         @default("individual") // individual | merchant | child | admin
   avatar           String         @default("👤")
   wallet           Wallet?
   merchant         Merchant?
@@ -96,4 +96,14 @@ model FamilyMember {
   frozen      Boolean @default(false)
   parent      User    @relation("Parent", fields: [parentId], references: [id])
   child       User    @relation("Child", fields: [childId], references: [id])
+}
+
+// تسعير العملة — صف وحيد يديره أدمن المحفظة
+// OMI عملة خاصة بالمحفظة (ليست مشفرة) سعرها ثابت مقابل الدولار
+// usdSyp: سعر الدولار بالليرة السورية (العملة البديلة للعرض) — يتحكم به الأدمن
+model CurrencySettings {
+  id        String   @id @default("main")
+  omiUsd    Float    @default(0.0005) // سعر ثابت: 1 OMI = 0.0005 دولار
+  usdSyp    Float    @default(13000)  // سعر الدولار بالليرة السورية
+  updatedAt DateTime @updatedAt
 }

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Store } from "lucide-react";
 import { AmountPad, PinPad, ProcessingView, ScreenHeader, SuccessView } from "@/components/umi/real/pads";
 import { api } from "@/lib/umi-client";
+import { omiToSyp, fmtSyp } from "@/lib/currency";
+import { useRates } from "@/lib/rates";
 import { fmt, type Me, type MerchantT } from "@/lib/umi-types";
 
 export function StoresScreen({
@@ -31,7 +33,7 @@ export function StoresScreen({
 
   return (
     <div className="h-full flex flex-col bg-umi-bg relative">
-      <ScreenHeader title="المتاجر" subtitle="متصلون ببوابة أومي للدفع" onBack={onExit} />
+      <ScreenHeader title="المتاجر" subtitle="متصلون ببوابة أومي للدفع بعملة OMI" onBack={onExit} />
       <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto no-scrollbar">
         {cats.map((c) => (
           <button
@@ -86,6 +88,19 @@ export function StoresScreen({
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** سطر مصادقة الدفع — OMI + مكافئ الليرة */
+function PinAuthAmount({ amount }: { amount: number }) {
+  const { rates } = useRates();
+  return (
+    <div className="text-center mb-2">
+      <p className="text-[11px] font-tajawal text-umi-muted">
+        مصادقة الدفع — <span dir="ltr" className="font-bold text-umi-cream">{fmt(amount)} OMI</span>
+      </p>
+      <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(amount, rates.usdSyp))} ل.س</p>
     </div>
   );
 }
@@ -165,9 +180,7 @@ function CheckoutSheet({
         </div>
       ) : (
         <div className="flex-1 pb-20">
-          <p className="text-center text-[11px] font-tajawal text-umi-muted">
-            مصادقة الدفع — {fmt(Number(amount) || 0)} ر.س
-          </p>
+          <PinAuthAmount amount={Number(amount) || 0} />
           <PinPad onComplete={pay} error={pinErr} />
         </div>
       )}

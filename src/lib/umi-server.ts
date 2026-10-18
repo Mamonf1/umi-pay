@@ -25,7 +25,7 @@ export async function assertChildCanSpend(childId: string, amount: number) {
   });
   const weekSpent = spent._sum.amount ?? 0;
   if (r2(weekSpent + amount) > link.weeklyLimit)
-    return `تجاوزت الحد الأسبوعي (${link.weeklyLimit} ر.س) — المتبقي ${r2(Math.max(0, link.weeklyLimit - weekSpent))} ر.س`;
+    return `تجاوزت الحد الأسبوعي (${link.weeklyLimit.toLocaleString("en-US")} OMI) — المتبقي ${r2(Math.max(0, link.weeklyLimit - weekSpent)).toLocaleString("en-US")} OMI`;
   return null;
 }
 

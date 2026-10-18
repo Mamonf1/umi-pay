@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Search, UserRound } from "lucide-react";
 import { AmountPad, PinPad, ScreenHeader, SuccessView } from "@/components/umi/real/pads";
 import { api } from "@/lib/umi-client";
+import { useRates } from "@/lib/rates";
+import { omiToSyp, fmtSyp } from "@/lib/currency";
 import { fmt, type Contact, type Me } from "@/lib/umi-types";
 
 /* ============ شاشة الإرسال (تدفق كامل) ============ */
@@ -97,7 +99,7 @@ export function SendScreen({
   if (step === "amount")
     return (
       <div className="h-full flex flex-col bg-umi-bg">
-        <ScreenHeader title={`إلى ${target?.name}`} subtitle={`الرصيد: ${fmt(me.balance)} ر.س`} onBack={() => setStep("pick")} />
+        <ScreenHeader title={`إلى ${target?.name}`} subtitle={`الرصيد: ${fmt(me.balance)} OMI`} onBack={() => setStep("pick")} />
         <div className="px-4">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 grid place-items-center">{target?.avatar}</span>
@@ -137,13 +139,26 @@ export function SendScreen({
       <div className="px-6 py-3">
         <div className="rounded-2xl p-4 umi-card text-center">
           <p className="text-[11px] font-tajawal text-umi-muted mb-1">تحويل إلى {target?.name}</p>
-          <p className="font-cairo font-black text-3xl gold-text" dir="ltr">{fmt(Number(amount) || 0)}<span className="text-base"> ر.س</span></p>
+          <ConfirmAmount amount={Number(amount) || 0} />
           {note && <p className="text-[11px] font-tajawal text-umi-muted mt-1">«{note}»</p>}
         </div>
         <p className="text-center text-[11px] font-tajawal text-umi-muted mt-5 mb-1">أدخل الرمز السري للمصادقة</p>
         <PinPad onComplete={submit} error={pinErr} />
       </div>
       <div className="pb-24" />
+    </div>
+  );
+}
+
+/** مبلغ التأكيد — OMI + مكافئ الليرة */
+function ConfirmAmount({ amount }: { amount: number }) {
+  const { rates } = useRates();
+  return (
+    <div>
+      <p className="font-cairo font-black text-[28px] gold-text leading-tight" dir="ltr">
+        {fmt(amount)}<span className="text-sm text-umi-muted"> OMI</span>
+      </p>
+      <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(amount, rates.usdSyp))} ل.س</p>
     </div>
   );
 }
@@ -158,7 +173,7 @@ export function TopUpSheet({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [amount, setAmount] = useState("100");
+  const [amount, setAmount] = useState("50000");
   const [method, setMethod] = useState<"mada" | "applepay" | "card">("mada");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -195,7 +210,7 @@ export function TopUpSheet({
 
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
-      <ScreenHeader title="شحن المحفظة" subtitle={`الرصيد الحالي: ${fmt(me.balance)} ر.س`} onBack={onClose} />
+      <ScreenHeader title="شحن المحفظة" subtitle={`الرصيد الحالي: ${fmt(me.balance)} OMI`} onBack={onClose} />
       <div className="flex gap-1.5 px-4 pb-2">
         {methods.map((m) => (
           <button
@@ -213,16 +228,21 @@ export function TopUpSheet({
       </div>
       <div className="flex-1 flex flex-col justify-end pb-24">
         <div className="flex gap-1.5 px-4 pb-2 justify-center">
-          {[50, 100, 200, 500].map((v) => (
+          {[
+            { v: 25000, label: "25 ألف" },
+            { v: 50000, label: "50 ألف" },
+            { v: 100000, label: "100 ألف" },
+            { v: 250000, label: "250 ألف" },
+          ].map(({ v, label }) => (
             <button
               key={v}
               type="button"
               onClick={() => setAmount(String(v))}
-              className={`px-3.5 h-8 rounded-full text-[11px] font-tajawal font-bold umi-card transition-colors ${
+              className={`px-3 h-8 rounded-full text-[10px] font-tajawal font-bold umi-card transition-colors ${
                 amount === String(v) ? "text-umi-gold border-umi-gold/40" : "text-umi-muted"
               }`}
             >
-              {v}
+              {label}
             </button>
           ))}
         </div>

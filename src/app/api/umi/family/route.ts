@@ -101,7 +101,8 @@ export async function PATCH(req: Request) {
     const data: { weeklyLimit?: number; frozen?: boolean } = {};
     if (weeklyLimit !== undefined) {
       const lim = r2(Number(weeklyLimit));
-      if (!lim || lim < 10 || lim > 10000) return fail("الحد يجب أن يكون بين 10 و 10000 ر.س");
+      if (!lim || lim < 10000 || lim > 10000000)
+        return fail("الحد يجب أن يكون بين 10,000 و 10,000,000 OMI");
       data.weeklyLimit = lim;
     }
     if (frozen !== undefined) data.frozen = Boolean(frozen);

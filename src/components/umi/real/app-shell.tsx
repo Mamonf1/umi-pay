@@ -9,11 +9,23 @@ import { SendScreen, TopUpSheet } from "@/components/umi/real/screens-money";
 import { StoresScreen } from "@/components/umi/real/screens-commerce";
 import { ChatScreen, FamilyScreen } from "@/components/umi/real/screens-social";
 import { api } from "@/lib/umi-client";
+import { RatesProvider, useRates } from "@/lib/rates";
+import { omiToSyp, fmtSyp } from "@/lib/currency";
+import { AdminScreen } from "@/components/umi/real/screens-admin";
+import { UmiLogo } from "@/components/umi/logo";
 import type { HomeData, Me } from "@/lib/umi-types";
 
 type Overlay = "topup" | "history" | "profile" | "qr" | null;
 
 export function UmiApp() {
+  return (
+    <RatesProvider>
+      <UmiAppInner />
+    </RatesProvider>
+  );
+}
+
+function UmiAppInner() {
   const [me, setMe] = useState<Me | null>(null);
   const [home, setHome] = useState<HomeData | null>(null);
   const [tab, setTab] = useState<ScreenKey>("home");
@@ -79,19 +91,21 @@ export function UmiApp() {
   );
 
   const meData = home?.me ?? me;
+  const { rates } = useRates();
+  const isAdmin = meData?.role === "admin";
 
   /* ============ محتوى الهاتف ============ */
   let screen: React.ReactNode;
   if (booting) {
     screen = (
       <div className="h-full grid place-items-center bg-umi-bg">
-        <div className="w-14 h-14 rounded-3xl grid place-items-center font-cairo font-black text-2xl text-[#0a0416] umi-glow animate-pulse" style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}>
-          U
-        </div>
+        <UmiLogo size={64} />
       </div>
     );
   } else if (!meData) {
     screen = <LoginScreen onLogin={login} />;
+  } else if (isAdmin) {
+    screen = <AdminScreen me={meData} onLogout={logout} />;
   } else {
     const tabs: Record<ScreenKey, React.ReactNode> = {
       home: home ? (
@@ -126,10 +140,11 @@ export function UmiApp() {
   }
 
   const demoAccounts = [
-    { label: "أحمد — ولي أمر", phone: "0551234567", avatar: "🧑🏻‍💼" },
-    { label: "متجر الريان — تاجر", phone: "0556789012", avatar: "🛒" },
-    { label: "خالد — حساب فرعي", phone: "0553456789", avatar: "👦🏻" },
-    { label: "سارة — مستخدمة", phone: "0552345678", avatar: "👩🏻" },
+    { label: "أحمد — ولي أمر", phone: "0551234567", avatar: "🧑🏻‍💼", wide: false },
+    { label: "متجر الريان — تاجر", phone: "0556789012", avatar: "🛒", wide: false },
+    { label: "خالد — حساب فرعي", phone: "0553456789", avatar: "👦🏻", wide: false },
+    { label: "سارة — مستخدمة", phone: "0552345678", avatar: "👩🏻", wide: false },
+    { label: "إدارة UMI — أدمن المحفظة (تسعير العملة)", phone: "0500000000", avatar: "👑", wide: true },
   ];
 
   const demoLogin = async (phone: string) => {
@@ -149,12 +164,10 @@ export function UmiApp() {
       {/* لوحة الحاسوب */}
       <aside className="max-w-md w-full text-center lg:text-right">
         <div className="flex items-center gap-3 justify-center lg:justify-start mb-4">
-          <span className="w-12 h-12 rounded-2xl grid place-items-center font-cairo font-black text-2xl text-[#0a0416] umi-glow" style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}>
-            U
-          </span>
+          <UmiLogo size={52} />
           <div>
             <h1 className="font-cairo font-black text-2xl gold-text leading-none">UMI PAY</h1>
-            <p className="text-[11px] font-tajawal text-umi-muted mt-1">محفظة رقمية + بوابة دفع</p>
+            <p className="text-[11px] font-tajawal text-umi-muted mt-1">محفظة عملة OMI + بوابة دفع</p>
           </div>
         </div>
 
@@ -162,13 +175,13 @@ export function UmiApp() {
           تطبيق موبايل حي — كل عملية تُحفظ فعلياً في قاعدة البيانات
         </h2>
         <p className="text-[13px] font-tajawal text-umi-muted leading-relaxed mb-5">
-          تحويلات فورية بين المحافظ، دفع للتجار عبر بوابة أومي، تحويل داخل المحادثات، وإدارة حسابات الأبناء بحدود إنفاق أسبوعية — ببيانات حقيقية في SQLite عبر Prisma، مع تحقق رمز سري وحالة رصيد ذرّية.
+          محفظة بعملة OMI الثابتة (1 OMI = 0.0005$) والليرة السورية عملة بديلة يدير سعرها أدمن المحفظة — تحويلات فورية، دفع للتجار عبر بوابة أومي، تحويل داخل المحادثات، وحسابات أبناء بحدود أسبوعية — ببيانات حقيقية في SQLite عبر Prisma.
         </p>
 
         <ul className="space-y-2 mb-6 text-right">
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
             <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Zap className="w-3.5 h-3.5" /></span>
-            تحويل + شحن + بوابة دفع للتجار — أرصدة تتحدث لحظياً
+            عملة OMI ثابتة مقابل الدولار + الليرة السورية بديل يديره الأدمن
           </li>
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
             <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Database className="w-3.5 h-3.5" /></span>
@@ -193,7 +206,7 @@ export function UmiApp() {
                   key={d.phone}
                   type="button"
                   onClick={() => demoLogin(d.phone)}
-                  className="umi-card rounded-xl px-3 py-2 text-right active:bg-white/10 transition-colors"
+                  className={`umi-card rounded-xl px-3 py-2 text-right active:bg-white/10 transition-colors ${d.wide ? "col-span-2" : ""}`}
                 >
                   <span className="text-base block">{d.avatar}</span>
                   <span className="block text-[11px] font-tajawal font-bold text-umi-cream leading-tight">{d.label}</span>
@@ -206,7 +219,15 @@ export function UmiApp() {
         {meData && (
           <div className="umi-card rounded-2xl p-4 text-[12px] font-tajawal text-umi-cream">
             <span className="inline-block w-2 h-2 rounded-full bg-umi-teal animate-umi-pulse ml-1.5" />
-            متصل الآن كـ <span className="font-bold text-umi-gold">{meData.name}</span> — الرصيد: <span dir="ltr" className="font-bold">{meData.balance.toFixed(2)}</span> ر.س
+            متصل الآن كـ <span className="font-bold text-umi-gold">{meData.name}</span>
+            {isAdmin ? (
+              <span> — لوحة تسعير العملة</span>
+            ) : (
+              <span dir="ltr">
+                {" "}{meData.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} OMI
+                <span className="text-umi-muted"> ≈ {fmtSyp(omiToSyp(meData.balance, rates.usdSyp))} ل.س</span>
+              </span>
+            )}
           </div>
         )}
       </aside>

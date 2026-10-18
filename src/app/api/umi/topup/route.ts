@@ -2,6 +2,8 @@
 import { db } from "@/lib/db";
 import { fail, moveMoney, ok, r2 } from "@/lib/umi-server";
 
+const MIN_TOPUP = 25000; // 25,000 OMI ≈ 12.5 دولار
+
 const METHODS: Record<string, string> = {
   mada: "بطاقة مدى",
   applepay: "Apple Pay",
@@ -12,7 +14,8 @@ export async function POST(req: Request) {
   try {
     const { userId, amount, method } = await req.json();
     const amt = r2(Number(amount));
-    if (!userId || !amt || amt < 10) return fail("أقل مبلغ للشحن 10 ر.س");
+    if (!userId || !amt || amt < MIN_TOPUP)
+      return fail(`أقل مبلغ للشحن ${MIN_TOPUP.toLocaleString("en-US")} OMI`);
     const methodLabel = METHODS[method] ?? "بطاقة مدى";
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return fail("المستخدم غير موجود", 404);

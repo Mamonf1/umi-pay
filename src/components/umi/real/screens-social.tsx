@@ -8,6 +8,8 @@ import { api } from "@/lib/umi-client";
 import {
   fmt, relTime, type FamilyChild, type FamilyData, type Me, type MsgT, type ThreadT,
 } from "@/lib/umi-types";
+import { useRates } from "@/lib/rates";
+import { omiToSyp, fmtSyp } from "@/lib/currency";
 
 /* ============ المحادثات ============ */
 export function ChatScreen({
@@ -66,7 +68,7 @@ export function ChatScreen({
               <span className="block text-[10px] font-tajawal text-umi-muted truncate mt-0.5">
                 {t.last
                   ? t.last.kind === "transfer"
-                    ? `${t.last.mine ? "أرسلت" : "استلمت"} ${fmt(t.last.amount ?? 0)} ر.س 💸`
+                    ? `${t.last.mine ? "أرسلت" : "استلمت"} ${fmt(t.last.amount ?? 0)} OMI 💸`
                     : `${t.last.mine ? "أنت: " : ""}${t.last.text}`
                   : "ابدأ المحادثة"}
               </span>
@@ -93,6 +95,7 @@ function ThreadView({
   thread: ThreadT;
   onBack: () => void;
 }) {
+  const { rates } = useRates();
   const [msgs, setMsgs] = useState<MsgT[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -164,7 +167,8 @@ function ThreadView({
               <div className={`max-w-[75%] rounded-2xl p-3 border ${m.mine ? "border-umi-gold/40" : "border-white/10"}`}
                 style={{ background: m.mine ? "linear-gradient(135deg,rgba(232,199,102,.14),rgba(232,199,102,.05))" : "rgba(255,255,255,.04)" }}>
                 <p className="text-[9px] font-tajawal text-umi-muted mb-0.5">{m.mine ? "أرسلت تحويلاً" : "استلمت تحويلاً"}</p>
-                <p className="font-cairo font-black text-lg gold-text" dir="ltr">{fmt(m.amount ?? 0)}<span className="text-[11px] text-umi-muted"> ر.س</span></p>
+                <p className="font-cairo font-black text-lg gold-text" dir="ltr">{fmt(m.amount ?? 0)}<span className="text-[11px] text-umi-muted"> OMI</span></p>
+                <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(m.amount ?? 0, rates.usdSyp))} ل.س</p>
                 <p className="text-[9px] font-tajawal text-umi-teal mt-0.5">مكتمل ✓ · محفوظ في القاعدة</p>
               </div>
             ) : (
@@ -241,7 +245,7 @@ function ThreadView({
           ) : (
             <div className="flex-1 pt-2 pb-20">
               <p className="text-center text-[11px] font-tajawal text-umi-muted">
-                مصادقة التحويل — {fmt(Number(amount) || 0)} ر.س
+                مصادقة التحويل — <span dir="ltr" className="font-bold text-umi-cream">{fmt(Number(amount) || 0)} OMI</span>
               </p>
               <PinPad onComplete={sendTransfer} error={pinErr} />
             </div>
@@ -262,6 +266,7 @@ export function FamilyScreen({
   onExit: () => void;
   onChanged: () => void;
 }) {
+  const { rates } = useRates();
   const [data, setData] = useState<FamilyData | null>(null);
   const [allowChild, setAllowChild] = useState<FamilyChild | null>(null);
   const [amount, setAmount] = useState("");
@@ -342,9 +347,12 @@ export function FamilyScreen({
           </div>
         ) : (
           <div className="flex-1 pt-2 pb-20">
-            <p className="text-center text-[11px] font-tajawal text-umi-muted">
-              إرسال مصروف — {fmt(Number(amount) || 0)} ر.س
-            </p>
+            <div className="text-center mb-2">
+              <p className="text-[11px] font-tajawal text-umi-muted">
+                إرسال مصروف — <span dir="ltr" className="font-bold text-umi-cream">{fmt(Number(amount) || 0)} OMI</span>
+              </p>
+              <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(Number(amount) || 0, rates.usdSyp))} ل.س</p>
+            </div>
             <PinPad onComplete={sendAllowance} error={pinErr} />
           </div>
         )}
@@ -357,18 +365,25 @@ export function FamilyScreen({
       <div className="h-full flex flex-col bg-umi-bg">
         <ScreenHeader title={`الحد الأسبوعي — ${limitChild.name}`} onBack={() => setLimitChild(null)} />
         <div className="flex-1 flex flex-col justify-center px-6 pb-20">
-          <p className="text-[11px] font-tajawal text-umi-muted text-center mb-3">اختر الحد الجديد (ر.س / أسبوع)</p>
+          <p className="text-[11px] font-tajawal text-umi-muted text-center mb-3">اختر الحد الجديد (OMI / أسبوع)</p>
           <div className="grid grid-cols-3 gap-2 mb-4">
-            {[50, 100, 150, 200, 300, 500].map((v) => (
+            {[
+              { v: 25000, label: "25 ألف" },
+              { v: 50000, label: "50 ألف" },
+              { v: 100000, label: "100 ألف" },
+              { v: 150000, label: "150 ألف" },
+              { v: 200000, label: "200 ألف" },
+              { v: 500000, label: "500 ألف" },
+            ].map(({ v, label }) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setLimitVal(String(v))}
-                className={`h-10 rounded-xl text-[13px] font-cairo font-bold umi-card transition-colors ${
+                className={`h-10 rounded-xl text-[11px] font-cairo font-bold umi-card transition-colors ${
                   limitVal === String(v) ? "text-umi-gold border-umi-gold/50" : "text-umi-cream"
                 }`}
               >
-                {v}
+                {label}
               </button>
             ))}
           </div>
@@ -402,12 +417,13 @@ export function FamilyScreen({
               </div>
             </div>
             <p className="text-[10px] font-tajawal text-umi-muted">رصيدي</p>
-            <p className="font-cairo font-black text-3xl gold-text" dir="ltr">{fmt(data.myBalance ?? 0)}<span className="text-sm"> ر.س</span></p>
+            <p className="font-cairo font-black text-3xl gold-text" dir="ltr">{fmt(data.myBalance ?? 0)}<span className="text-sm"> OMI</span></p>
+            <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(data.myBalance ?? 0, rates.usdSyp))} ل.س</p>
           </div>
           <div className="rounded-2xl p-4 umi-card">
             <div className="flex justify-between text-[11px] font-tajawal mb-2">
               <span className="text-umi-muted">إنفاق هذا الأسبوع</span>
-              <span className="text-umi-cream font-bold" dir="ltr">{fmt(data.myWeekSpent ?? 0)} / {fmt(data.myLimit ?? 0)} ر.س</span>
+              <span className="text-umi-cream font-bold" dir="ltr">{fmt(data.myWeekSpent ?? 0)} / {fmt(data.myLimit ?? 0)} OMI</span>
             </div>
             <div className="h-2 rounded-full bg-white/8 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#c99b3f,#e8c766,#f5dfa0)" }} />
@@ -439,7 +455,7 @@ export function FamilyScreen({
                   <p className="text-[13px] font-cairo font-bold text-umi-cream truncate">{c.name}</p>
                   <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">{c.phone}</p>
                 </div>
-                <p className="font-cairo font-bold text-umi-gold text-sm" dir="ltr">{fmt(c.balance)}<span className="text-[9px] text-umi-muted"> ر.س</span></p>
+                <p className="font-cairo font-bold text-umi-gold text-sm" dir="ltr">{fmt(c.balance)}<span className="text-[9px] text-umi-muted"> OMI</span></p>
               </div>
               <div className="flex justify-between text-[10px] font-tajawal mt-3 mb-1.5">
                 <span className="text-umi-muted">إنفاق الأسبوع</span>
