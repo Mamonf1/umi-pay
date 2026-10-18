@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>خطة تطوير تطبيق أومني باي UMI PAY</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: 794px 1123px; margin: 0; }
+:root{
+  --page-bg:#f0eff0; --section-bg:#f1f0f2; --card-bg:#e9e5ea; --stripe:#edebee;
+  --header-fill:#4c3955; --cover-block:#6f4d80; --border:#bbaec1; --icon:#8752a1;
+  --accent:#8029ac; --text:#1b191c; --muted:#767079;
+  --cov-bg:#131214; --cov-accent:#c182e1; --cov-text:#e1dfe2; --cov-muted:#938e96;
+  --cov-card:#261f29; --cov-border:#52415b;
+}
+html,body{ margin:0; padding:0; width:794px; background:var(--page-bg); color:var(--text);
+  font-family:'Tajawal','Cairo',sans-serif; font-size:15px; line-height:1.9; }
+@media screen{
+  html{ height:auto; display:flex; justify-content:center; background:#242029; }
+  body{ transform-origin:top center; scale:min(1, calc(100vw / 794)); margin:20px auto;
+        box-shadow:0 0 60px rgba(0,0,0,.4); }
+}
+*{ box-sizing:border-box; }
+p{ margin:0 0 12px; text-align:justify; }
+b,strong{ font-weight:700; }
+
+/* ═══════════ COVER ═══════════ */
+.cover{ width:794px; height:1123px; position:relative; background:var(--cov-bg);
+  color:var(--cov-text); break-after:page; overflow:hidden; }
+.cov-glow{ position:absolute; border-radius:50%; }
+.g1{ width:62%; height:34%; top:6%; right:0; opacity:.07;
+  background:radial-gradient(circle at 70% 40%, var(--cov-accent), transparent 70%); }
+.g2{ width:58%; height:32%; bottom:5%; left:0; opacity:.06;
+  background:radial-gradient(circle at 30% 60%, var(--cov-accent), transparent 70%); }
+.cov-frame{ position:absolute; top:80px; bottom:80px; left:60px; right:60px;
+  border:2px solid var(--cov-accent); opacity:.85; }
+.cov-content{ position:absolute; inset:0; }
+.cov-kicker{ position:absolute; top:138px; right:110px; font-size:13px; font-weight:500;
+  color:var(--cov-accent); max-width:560px; line-height:1.6; }
+.cov-hero{ position:absolute; top:236px; right:110px; font-family:'Cairo',sans-serif;
+  font-size:78px; font-weight:900; color:var(--cov-text); line-height:1.15;
+  text-shadow:0 0 40px rgba(193,130,225,.25); }
+.cov-latin{ position:absolute; top:352px; right:112px; font-family:'Cairo',sans-serif;
+  font-size:17px; font-weight:700; letter-spacing:6px; color:var(--cov-accent); }
+.cov-summary{ position:absolute; top:436px; right:110px; width:520px; font-size:15.5px;
+  line-height:1.95; color:var(--cov-muted); text-align:justify; }
+.cov-stats{ position:absolute; top:640px; right:110px; left:110px; display:flex;
+  flex-wrap:wrap; gap:14px; }
+.cov-stat{ flex:1 1 180px; min-width:150px; max-width:100%; background:var(--cov-card);
+  border-radius:10px; padding:16px 18px; }
+.cov-stat .n{ font-family:'Cairo',sans-serif; font-size:24px; font-weight:800;
+  color:var(--cov-accent); line-height:1.2; }
+.cov-stat .l{ font-size:11.5px; color:var(--cov-muted); line-height:1.6; margin-top:2px; }
+.cov-meta{ position:absolute; top:866px; right:110px; font-size:15px; color:var(--cov-text); font-weight:700; }
+.cov-meta2{ position:absolute; top:896px; right:110px; max-width:560px; font-size:13px; color:var(--cov-muted); line-height:1.7; }
+.cov-date{ position:absolute; bottom:130px; right:110px; font-size:12px;
+  color:var(--cov-muted); letter-spacing:2px; }
+.cov-doc{ position:absolute; bottom:130px; left:110px; font-size:12px;
+  color:var(--cov-muted); letter-spacing:2px; }
+
+/* ═══════════ FLOW CONTENT ═══════════ */
+.main-content{ padding:58px 64px 46px 64px; background:var(--page-bg); }
+.chapter-header{ break-after:avoid; break-inside:avoid; margin-top:26px; }
+.chapter-header:first-child{ margin-top:0; }
+.sec-tag{ display:inline-block; font-family:'Cairo',sans-serif; font-size:12px; font-weight:800;
+  color:var(--accent); background:rgba(128,41,172,.08); border:1px solid var(--border);
+  border-radius:20px; padding:1px 14px; margin-bottom:8px; }
+.sec-title{ font-family:'Cairo',sans-serif; font-size:28px; font-weight:800; color:var(--header-fill);
+  line-height:1.35; margin:0 0 4px; }
+.sec-divider{ width:64px; height:3px; background:var(--accent); border-radius:2px; margin:6px 0 14px; }
+h3{ font-family:'Cairo',sans-serif; font-size:19px; font-weight:800; color:var(--header-fill);
+  margin:16px 0 8px; break-after:avoid; }
+h4{ font-family:'Cairo',sans-serif; font-size:17px; font-weight:700; color:var(--header-fill);
+  margin:12px 0 6px; break-after:avoid; }
+.lead{ font-size:15px; color:var(--text); }
+.small-note{ font-size:12.5px; color:var(--muted); line-height:1.7; }
+
+/* stat row */
+.stat-row{ display:flex; flex-wrap:wrap; gap:12px; margin:14px 0 6px; break-inside:avoid; }
+.stat-card{ flex:1 1 150px; min-width:140px; max-width:100%; background:var(--card-bg);
+  border-top:3px solid var(--accent); border-radius:10px; padding:14px 15px; }
+.stat-card .n{ font-family:'Cairo',sans-serif; font-size:26px; font-weight:900; color:var(--accent); line-height:1.25; }
+.stat-card .l{ font-size:12px; color:var(--muted); line-height:1.6; margin-top:3px; }
+
+/* cards */
+.card{ background:var(--card-bg); border-radius:12px; padding:16px 18px; margin-bottom:12px;
+  break-inside:avoid; border-right:4px solid var(--icon); }
+.card h4{ margin-top:0; }
+.card p{ margin-bottom:8px; }
+ul.tight{ margin:6px 0 10px; padding-right:20px; }
+ul.tight li{ margin-bottom:5px; break-inside:avoid; text-align:right; }
+ol.steps{ margin:6px 0 10px; padding-right:22px; }
+ol.steps li{ margin-bottom:5px; text-align:right; }
+
+/* tables */
+table{ width:100%; border-collapse:collapse; margin:12px 0 8px; break-inside:avoid;
+  font-size:13.5px; }
+thead{ display:table-header-group; }
+tr{ break-inside:avoid; }
+th{ background:var(--header-fill); color:#fff; font-family:'Cairo',sans-serif; font-weight:700;
+  padding:9px 12px; text-align:right; font-size:13.5px; }
+td{ padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.7; }
+tbody tr:nth-child(odd) td{ background:var(--stripe); }
+td.k{ font-weight:700; color:var(--header-fill); white-space:nowrap; }
+
+/* figures */
+figure{ display:block; width:100%; margin:16px auto 6px; break-inside:avoid; }
+figcaption{ font-size:12.5px; color:var(--muted); text-align:center; margin-top:8px; }
+.chart-box{ background:var(--section-bg); border:1px solid var(--border); border-radius:12px;
+  padding:18px 16px 10px; }
+.legend-grid{ display:flex; flex-wrap:wrap; gap:8px 22px; margin:10px 4px 6px; }
+.legend-item{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text); }
+.legend-item .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+/* roadmap phase */
+.phase{ background:var(--card-bg); border-radius:12px; padding:16px 18px; margin-bottom:12px;
+  break-inside:avoid; border-right:4px solid var(--header-fill); }
+.phase .ph-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px; }
+.phase h4{ margin:0; }
+.phase .weeks{ font-family:'Cairo',sans-serif; font-size:12.5px; font-weight:700; color:var(--accent); }
+.exit{ background:var(--section-bg); border-radius:8px; padding:10px 14px; margin-top:10px; }
+.exit .t{ font-size:12.5px; font-weight:800; color:var(--accent); margin-bottom:4px;
+  font-family:'Cairo',sans-serif; }
+.exit ul{ margin:0; padding-right:18px; font-size:13px; }
+.exit li{ margin-bottom:3px; }
+
+/* ending */
+.ending{ width:794px; height:1123px; position:relative; background:var(--cov-bg);
+  color:var(--cov-text); break-before:page; overflow:hidden; }
+.end-glow{ position:absolute; width:70%; height:40%; top:30%; right:15%; opacity:.07;
+  background:radial-gradient(circle, var(--cov-accent), transparent 70%); border-radius:50%; }
+.end-inner{ position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:0 90px; }
+.end-line{ width:70px; height:2px; background:var(--cov-accent); margin:26px 0; }
+.end-title{ font-family:'Cairo',sans-serif; font-size:40px; font-weight:900; line-height:1.5; }
+.end-sub{ font-size:15px; color:var(--cov-muted); line-height:2; max-width:520px; }
+.end-brand{ font-family:'Cairo',sans-serif; font-size:15px; font-weight:800;
+  letter-spacing:5px; color:var(--cov-accent); margin-top:34px; }
+.end-contact{ font-size:12.5px; color:var(--cov-muted); margin-top:10px; letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ الغلاف ═══════════════ -->
+<div class="cover">
+  <div class="cov-glow g1"></div>
+  <div class="cov-glow g2"></div>
+  <div class="cov-frame"></div>
+  <div class="cov-content">
+    <div class="cov-kicker">وثيقة خطة تطوير منتج — مُعدّة للعرض على الحاضنات ووجهات التمويل المبكر</div>
+    <div class="cov-hero">أومني باي</div>
+    <div class="cov-latin">UMI PAY · DIGITAL WALLET</div>
+    <div class="cov-summary">خارطة طريق تنفيذية لتحويل نموذج «أومني باي» الأولي — محفظة رقمية عربية تجمع التحويلات الفورية والدفع داخل المحادثة والمتاجر المصغّرة والحسابات الفرعية العائلية — إلى منتج Flutter قابل للإطلاق في السوق السعودي خلال ستة أشهر، بدعم بنية تقنية آمنة واستراتيجية تصميم تضع التجربة العربية أولاً.</div>
+    <div class="cov-stats">
+      <div class="cov-stat"><div class="n">6 أشهر</div><div class="l">من الانطلاق حتى نسخة الإطلاق التجريبي MVP</div></div>
+      <div class="cov-stat"><div class="n">4 ميزات</div><div class="l">أولوية قصوى: المحفظة، المتاجر، الشات، الحسابات الفرعية</div></div>
+      <div class="cov-stat"><div class="n">85%</div><div class="l">من مدفوعات التجزئة في السعودية إلكترونية (ساما 2025)</div></div>
+      <div class="cov-stat"><div class="n">14+ مليون</div><div class="l">مستخدم لأكبر محفظة سعودية — دليل على نضج الطلب</div></div>
+    </div>
+    <div class="cov-meta">فريق أومني باي</div>
+    <div class="cov-meta2">نطاق الوثيقة: تحليل الوضع الحالي&nbsp;· السوق والمنافسون&nbsp;· استراتيجية التصميم&nbsp;· نطاق الميزات&nbsp;· البنية التقنية&nbsp;· خارطة الطريق والتقديرات المالية</div>
+    <div class="cov-date">أكتوبر 2026 · الإصدار 1.0</div>
+    <div class="cov-doc">UMI-PLAN-2026</div>
+  </div>
+</div>
+
+<!-- ═══════════════ المتن ═══════════════ -->
+<div class="main-content">
+<!-- ═══ 1. الملخص التنفيذي ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 01</div>
+  <div class="sec-title">الملخص التنفيذي</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead"><b>أومني باي (UMI PAY)</b> محفظة إلكترونية عربية تستهدف السوق السعودي، تُبنى حول فكرة واحدة: المال يتحرك طبيعياً داخل المحادثات والعلاقات اليومية، لا داخل شاشات بنكية جامدة. يوفّر التطبيق تحويلات فورية بين المستخدمين، ودفعاً داخل المحادثة النصية دون مغادرة الشات، وسوقاً مصغّراً للتجار المحليين يعتمد مسح رمز QR، وحسابات فرعية مُدارة تتيح للأسرة تخصيص ميزانيات يومية للأبناء والعمالة المنزلية بحدود إنفاق وإشعارات لكل عملية. هذا المزيج الثلاثي — <b>شات-تجارة، تجارة مصغّرة، إدارة عائلية</b> — يمثل فجوة واضحة في السوق السعودي التي تهيمن عليها محافظ الدفع العامة.</p>
+
+<p>الوضع الحالي: نموذج أولي تفاعلي كامل بملف HTML واحد يغطي ثماني شاشات وكل تدفقات المستخدم الأساسية بلغة بصرية فاخرة جاهزة للترحيل، إضافة إلى هيكل مشروع Flutter يحتوي إعدادات iOS فقط. ما ينقص ليس الفكرة ولا الواجهة، بل <b>طبقة التنفيذ الصناعي</b>: كود Flutter الفعلي، وباك-إند آمن بقاعدة بيانات، ومصادقة حقيقية، ومنطق مالي محاسبي مزدوج القيد. تطلب هذه الوثيقة تمويل بذري يقارب <b>1.2 مليون ريال</b> يغطي ستة أشهر تطوير حتى نسخة الإطلاق التجريبي، وستة أشهر تشغيل وتحسين مدعومة بمؤشرات واضحة.</p>
+
+<div class="stat-row">
+  <div class="stat-card"><div class="n">24 أسبوعاً</div><div class="l">خارطة طريق من ثلاث مراحل حتى الإطلاق التجريبي</div></div>
+  <div class="stat-card"><div class="n">1.2 م.ر</div><div class="l">التقدير المالي لـ 12 شهراً شاملة الفريق والبنية والتسويق</div></div>
+  <div class="stat-card"><div class="n">5 أدوار</div><div class="l">حجم الفريق الأساسي: تطوير، باك-إند، تصميم، جودة، منتج</div></div>
+  <div class="stat-card"><div class="n">300–500</div><div class="l">مستخدم في الدفعة التجريبية الأولى مع 20–30 تاجراً</div></div>
+</div>
+
+<!-- ═══ 2. تحليل الوضع الحالي ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 02</div>
+  <div class="sec-title">تحليل الوضع الحالي</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p>قبل رسم خارطة الطريق، لا بد من جرد صادق لما هو مملوك فعلاً. الملفان المرفقان — النموذج التفاعلي وهيكل Flutter — يقدّمان قيمة مختلفة تماماً: الأول أصل تصميمي ومنتجي جاهز للاستثمار فيه، والثاني مجرد غلاف تقني لم يبدأ بعد. الجدولان الآتيان يلخّصان هذا الجرد ثم يستخرج منه قائمة الفجوات الحرجة التي تحدد أولويات المرحلة الأولى.</p>
+
+<h3>2.1 جرد الأصول المملوكة</h3>
+<table>
+  <thead><tr><th style="width:24%">الأصل</th><th style="width:44%">ما يحتويه فعلاً</th><th>قيمته للمرحلة القادمة</th></tr></thead>
+  <tbody>
+    <tr><td class="k">النموذج الأولي HTML</td><td>8 شاشات كاملة: دخول وتسجيل، محفظة برصيد، تحويل، إيداع، QR، خدمات ومتاجر وحسابات فرعية، محادثات، عجلة حظ، ملف شخصي — مع نظام نوافذ منبثقة موحد ومنطق تفاعلي كامل ببيانات تجريبية</td><td>مرجع تجربة المستخدم والمواصفات الوظيفية؛ لغته البصرية (بنفسجي/ذهبي، RTL) تُترجم مباشرة إلى نظام تصميم Flutter</td></tr>
+    <tr><td class="k">هيكل Flutter «umni»</td><td>مجلد iOS فقط: AppDelegate وInfo.plist وأيقونات التطبيق وشاشة الإطلاق — <b>بدون</b> مجلد lib أو pubspec.yaml أو أي كود Dart</td><td>يُستبدل بمشروع Flutter قياسي جديد؛ لا يُبنى عليه لأنه ينقصه كل ما يمثل التطبيق</td></tr>
+  </tbody>
+</table>
+
+<h3>2.2 الفجوات الحرجة</h3>
+<table>
+  <thead><tr><th style="width:26%">الفجوة</th><th style="width:44%">لماذا هي حرجة</th><th>العلاج المقترح</th></tr></thead>
+  <tbody>
+    <tr><td class="k">لا باك-إند ولا قاعدة بيانات</td><td>كل البيانات في localStorage بالمتصفح؛ الرصيد يُعدّل بضغطة زر ولا وجود لأي حقيقة مالية موثوقة</td><td>باك-إند مُدار مع مخطط محاسبي مزدوج القيد (تفصيله في القسم 06)</td></tr>
+    <tr><td class="k">مصادقة غير حقيقية</td><td>الدخول الحالي يقبل أي رقم ورمز مرور؛ لا تحقق هوية ولا جلسات آمنة</td><td>تسجيل برقم الجوال + OTP، ورموز JWT قصيرة العمر مع تجديد آمن</td></tr>
+    <tr><td class="k">لا كود Flutter</td><td>المنصة المستهدفة موبايل، والنموذج HTML لا يصلح إنتاجياً على الجوال</td><td>بناء تطبيق Flutter من الصفر مع ترحيل مواصفات النموذج، لا كوده</td></tr>
+    <tr><td class="k">منطق مالي محفوف بالمخاطر</td><td>عجلة الحظ في النموذج تضيف رصيداً دائماً — اقتصاد مكافآت غير محكومة لا يصلح لمنتج مالي</td><td>إعادة تصميمها كبرنامج ولاء بميزانية ومعدلات محسومة، أو تأجيلها بعد الإطلاق</td></tr>
+    <tr><td class="k">غياب الأمان والامتثال</td><td>لا تشفير، لا سجل تدقيق، لا حدود صرف فعالة للحسابات الفرعية</td><td>طبقة أمان متكاملة من اليوم الأول (القسم 06) ومسار تنظيمي مرحلي (القسم 09)</td></tr>
+  </tbody>
+</table>
+
+<p>الخلاصة النقدية: أقوى ما في المشروع هو وضوح رؤية المنتج وسرعة الوصول إلى نموذج ملموس، وأضعف ما فيه هو الخلط بين <b>عرض الفكرة</b> و<b>بناء المنتج</b>. الخطة القادمة تعالج هذا الخلط بترتيب صارم: تصميم أولاً لأنه أصل قائم يحتاج صقل لا ابتكار، ثم بنية تقنية صحيحة لأن إعادة بنائها لاحقاً مكلفة، ثم الميزات بالترتيب الذي يولّد قيمة قابلة للقياس أسرع.</p>
+
+<!-- ═══ 3. السوق والمنافسون ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 03</div>
+  <div class="sec-title">السوق والمنافسون</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">لا يحتاج مشروع محفظة اليوم إلى إقناع المستخدم السعودي بأن الدفع الرقمي مفيد — البنك المركزي أنجز هذه المهمة. في عام 2019 كانت المدفوعات الإلكترونية 36% فقط من مدفوعات التجزئة، ثم قفزت إلى 79% في 2024، وبلغت <b>85% في 2025</b> وفق البنك المركزي السعودي (ساما)، متجاوزةً هدف رؤية 2030 قبل موعده. مع 96% من معاملات نقاط البيع لامسة، و1.12 مليار معاملة تجارة إلكترونية عبر شبكة مدى في 2024 وحدها، صارت البنية التحتية للدفع ناضجة تماماً — والمنافسة انتقلت من «كيف ندفع؟» إلى «لماذا نستخدم محفظتك بالذات كل يوم؟».</p>
+
+<figure>
+  <div class="chart-box">
+    <svg width="100%" viewBox="0 0 640 252" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="نمو المدفوعات الإلكترونية">
+      <!-- dashed target line 80% -->
+      <line x1="30" y1="46" x2="610" y2="46" stroke="#767079" stroke-width="1" stroke-dasharray="5,4" opacity="0.55"/>
+      <text x="606" y="38" font-size="12" fill="#767079" text-anchor="end" font-family="Tajawal, sans-serif">هدف رؤية 2030: 80%</text>
+      <!-- baseline -->
+      <line x1="30" y1="216" x2="610" y2="216" stroke="#bbaec1" stroke-width="1.2"/>
+      <!-- bars: scale 2px per % → y = 216 - v*2 -->
+      <rect x="70"  y="144" width="72" height="72"  rx="3" fill="#cbb6d8"/>
+      <rect x="200" y="76"  width="72" height="140" rx="3" fill="#a97cc0"/>
+      <rect x="330" y="58"  width="72" height="158" rx="3" fill="#8752a1"/>
+      <rect x="460" y="46"  width="72" height="170" rx="3" fill="#8029ac"/>
+      <!-- value labels -->
+      <text x="106" y="134" font-size="14" font-weight="700" fill="#1b191c" text-anchor="middle" font-family="Cairo, sans-serif">36%</text>
+      <text x="236" y="66"  font-size="14" font-weight="700" fill="#1b191c" text-anchor="middle" font-family="Cairo, sans-serif">70%</text>
+      <text x="366" y="48"  font-size="14" font-weight="700" fill="#1b191c" text-anchor="middle" font-family="Cairo, sans-serif">79%</text>
+      <text x="496" y="36"  font-size="14" font-weight="700" fill="#8029ac" text-anchor="middle" font-family="Cairo, sans-serif">85%</text>
+      <!-- year labels -->
+      <text x="106" y="238" font-size="12.5" fill="#767079" text-anchor="middle" font-family="Tajawal, sans-serif">2019</text>
+      <text x="236" y="238" font-size="12.5" fill="#767079" text-anchor="middle" font-family="Tajawal, sans-serif">2023</text>
+      <text x="366" y="238" font-size="12.5" fill="#767079" text-anchor="middle" font-family="Tajawal, sans-serif">2024</text>
+      <text x="496" y="238" font-size="12.5" fill="#767079" text-anchor="middle" font-family="Tajawal, sans-serif">2025</text>
+    </svg>
+  </div>
+  <figcaption>نسبة المدفوعات الإلكترونية من إجمالي مدفوعات التجزئة في السعودية — المصدر: البنك المركزي السعودي (ساما) وتحليل WhiteSight</figcaption>
+</figure>
+
+<p>حجم الفرصة: قدّرت دراسات MarkNtel سوق المحافظ الرقمية السعودية بنحو <b>1.03 مليار دولار في 2024</b> بمعدل نمو سنوي مركب 16.8% حتى 2030، فيما أصبحت السعودية أكبر سوق رأس مال جريء في المنطقة بجمع الشركات الناشئة <b>1.72 مليار دولار في 2025</b> بنمو 145% عن العام السابق. أي أن السوق ينمو من الجهتين معاً: الطلب الاستهلاكي والتمويل المؤسسي. لكن التركيز التنافسي لا يزال منحازاً إلى محافظ الدفع العامة، وهنا الفجوة التي يستهدفها أومني باي.</p>
+
+<h3>3.1 خريطة المنافسة</h3>
+<table>
+  <thead><tr><th style="width:20%">اللاعب</th><th style="width:26%">نقطة قوته</th><th style="width:26%">حدوده</th><th>أين نتموضع نحن</th></tr></thead>
+  <tbody>
+    <tr><td class="k">STC Pay / stc bank</td><td>أكثر من 14 مليون مستخدم، ثقة علامة وطنية، رخصة بنكية كاملة</td><td>تجربة عائلية شبه غائبة؛ الدفع داخل المحادثة غير متاح؛ التلعيب محدود</td><td>العمق الاجتماعي والعائلي الذي لا توفره منصة بهذا الحجم بسرعة</td></tr>
+    <tr><td class="k">Apple Pay / مدى</td><td>انتشار شبه كامل في الدفع غير الشخصي</td><td>أداة دفع لا محفظة اجتماعية: لا تحويلات بين الأصدقاء ولا إدارة أطفال</td><td>نركب فوقها كقناة إيداع لا ننافسها</td></tr>
+    <tr><td class="k">تطبيقات الميزانية (دراهيم ونظيراتها)</td><td>أدوات تتبع وتخطيط مالي ممتازة</td><td>لا تنفذ المال: لا تحويل فوري ولا دفع ولا شات</td><td>نحن ننفّذ الحركة المالية لا نكتفي بمراقبتها</td></tr>
+    <tr><td class="k">البنوك التقليدية</td><td>أمان وتنظيم راسخان</td><td>تجربة بطيئة، مبنية حول الحساب لا حول العلاقة اليومية</td><td>شراكة مستقبلية للسحب والإيداع لا منافسة مباشرة</td></tr>
+  </tbody>
+</table>
+
+<p>المبدأ التنافسي الحاكم: <b>لا يبنى أومني باي ليحل محل البنك أو شبكة المدى، بل ليكون الطبقة الاجتماعية فوقهما</b> — المكان الذي تُقسَّم فيه المصاريف داخل الأسرة، ويُرسل المبلغ رداً على رسالة، ويُدفع في المقهى بمسح رمز دون ماكينة. هذه الاستخدامات الثلاثة هي التي تجعل التطبيق يُفتح يومياً لا أسبوعياً، وهي الأساس الذي تُبنى عليه مؤشرات الاحتفاظ في القسم 09.</p>
+<!-- ═══ 4. استراتيجية التصميم وتجربة المستخدم ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 04</div>
+  <div class="sec-title">استراتيجية التصميم وتجربة المستخدم</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">في منتج مالي، التصميم ليس زينة بل هو أداة الثقة الأولى: المستخدم يحكم على المحفظة في أول ثلاثين ثانية قبل أن ينفذ أي تحويل. ولأن التطبيق يولد من نموذج أولي غني بصرياً، فإن مهمتنا هنا <b>الصقل لا الابتكار</b>: تحويل اللغة البصرية القائمة (بنفسجي عميق، ذهبي للمكافآت، بطاقات داكنة فاخرة) إلى نظام تصميم موثّق قابل للتنفيذ في Flutter، ثم تعريض كل قرار تصميمي لاختبار مستخدم حقيقي قبل بنائه.</p>
+
+<h3>4.1 نظام التصميم (Design System) العربي أولاً</h3>
+<ul class="tight">
+  <li><b>اتجاه RTL من الجذر:</b> كل الشاشات تُصمم بالعربية أولاً وتُختبر بالعربية، مع عكس مخططات التنقل والحركات (زلة اليد، اتجاه رجوع الصفحة) بدل الاكتفاء بعكس النصوص؛ الإنجليزية لغة ثانية جاهزة لا مترجمة على عجل.</li>
+  <li><b>توكنات الألوان المشددة:</b> بنفسجي العلامة للهوية والتفاعل الأساسي، ذهبي محصور حصراً في المكافآت والأرصدة المكتسبة حتى لا يفقد قيمته الإشاراتية، ورمادي محايد للنصوص؛ عائلة لونية واحدة بمستويات تشبع متدرجة، ولا لون ثالث دخيل.</li>
+  <li><b>الخطوط:</b> خط عربي واحد للعناوين (Cairo بأوزانه الثقيلة) وواحد للمتن (Tajawal) بمقاسات مثبتة في توكنات؛ أرقام الأرصدة بخط متساوي العرض لتجنب اهتزاز الشاشة عند التحديث.</li>
+  <li><b>شبكة 8pt ومكونات مشتركة:</b> بطاقات، أزرار، حقول، ونوافذ منبثقة موحدة — النظام الموحد للنوافذ في النموذج الحالي يتحول إلى مكوّن Flutter واحد يخدم كل التدفقات.</li>
+</ul>
+
+<h3>4.2 الميكرو-تفاعلات والوضعان الداكن والفاتح</h3>
+<p>الثقة تُبنى بالتفاصيل: تأكيد إرسال التحويل بحركة معتدلة واهتزاز لمسي خفيف، هيكل تحميل (Skeleton) في القوائم بدل مؤشرات دائرية، انتقالات صفحات لا تتجاوز 250 مللي ثانية، وتفاعل لمسي واضح على كل عنصر قابل للنقر. الوضع الداكن هو الوضع الافتراضي المستوحى من النموذج الحالي، ويُبنى الوضع الفاتح بالتوازي من نفس التوكنات — بناءه متأخراً يعني إعادة تكلفة مضاعفة. أما إتاحة الوصول فشرط قبول لا خيار: تباين نصوص لا يقل عن 4.5:1، أهداف لمس لا تقل عن 44 نقطة، دعم قارئ الشاشة في التدفقات المالية الحرجة، وتكبير خط يتبع إعدادات النظام.</p>
+
+<h3>4.3 معايير قياس جودة التجربة</h3>
+<table>
+  <thead><tr><th style="width:40%">المعيار</th><th style="width:26%">الهدف</th><th>طريقة القياس</th></tr></thead>
+  <tbody>
+    <tr><td class="k">إكمال أول تحويل</td><td>أقل من 30 ثانية</td><td>قياس زمني داخل التطبيق من فتح الشاشة حتى التأكيد</td></tr>
+    <tr><td class="k">معدل إنجاز مهمة التحويل</td><td>90% أو أكثر</td><td>اختبارات قابلية استخدام مع 8–10 مستخدمين لكل دورة تصميم</td></tr>
+    <tr><td class="k">إكمال التسجيل والتفعيل</td><td>75% أو أكثر</td><td>تحليل مسار التسجيل ونقاط التسرب فيه</td></tr>
+    <tr><td class="k">رضا عام عن الاستخدام (SUS)</td><td>80 أو أعلى</td><td>استبيان قياسي بعد كل جلسة اختبار</td></tr>
+  </tbody>
+</table>
+
+<p>دورة العمل المعتمدة: كل ميزة تمر بتصميم في Figma، ثم اختبار ورقي سريع، ثم بناء، ثم اختبار استخدام قبل الإطلاق — بحيث لا تصل أي شاشة إلى المستخدم دون أن يراها إنسان غير الفريق. هذه الدورة تكلّف أياماً قليلة في كل ميزة وتوفر أسابيع إعادة بناء بعد الإطلاق.</p>
+
+<!-- ═══ 5. الميزات ذات الأولوية ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 05</div>
+  <div class="sec-title">الميزات ذات الأولوية — نطاق النسخة الأولى</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">القاعدة الحاكمة لنطاق MVP: ميزة لا تُبنى إلا إذا خدمت إحدى ثلاث غايات قابلة للقياس — الاحتفاظ اليومي، أو المعاملات بين المستخدمين، أو اكتساب التجار. أربع ميزات اجتازت هذا الفلتر، وكل بطاقة أدناه تحدد الوصف، ونطاق النسخة الأولى بدقة تمنع تضخم النطاق، ومعيار القبول الذي يُبنى على أساسه قرار «انتهت الميزة».</p>
+
+<div class="card">
+  <h4>1 · المحفظة والتحويلات — قلب المنتج</h4>
+  <p>رصيد فوري مع سجل حركات قابل للبحث والتصفية، وتحويل بين مستخدمي أومني بمعرّف أو رقم جوال أو مسح QR، مع طلب مبلغ معاكس (استلام طلب دفع). الإيداع عبر قناة مدى وApple Pay من مزود دفع سعودي مرخص.</p>
+  <ul class="tight">
+    <li><b>نطاق MVP:</b> التحويل الداخلي بين مستخدمي أومني فقط، إيداع عبر مزود واحد، لا سحب بنكي&nbsp;— يُضاف بعد التحقق من القوة الجاذبة.</li>
+    <li><b>معيار القبول:</b> تحويل مكتمل في أقل من 30 ثانية، إشعار فوري للطرفين، وكل عملية تمر بمحاسبة مزدوجة القيد لا يظهر فيها أي خلل توازن في التدقيق اليومي.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h4>2 · المتاجر والتجار — مصدر العرض</h4>
+  <p>لوحة تاجر مصغّرة داخل التطبيق: توليد فاتورة برمز QR، عرض مبيعات اليوم، ورصيد التاجر القابل للتحويل. المشتري يمسح الرمز ويدفع خلال ثوانٍ دون أي عتاد إضافي — وهذا ما يجعل الاكتساب ممكناً في المقاهي والمحلات الصغيرة.</p>
+  <ul class="tight">
+    <li><b>نطاق MVP:</b> 20–30 تاجراً متعاقداً في نطاق جغرافي واحد، تسوية أسبوعية يدوية مدعومة، وتقارير مبيعات أساسية.</li>
+    <li><b>معيار القبول:</b> دفع QR مكتمل في أقل من 10 ثوانٍ، ومطابقة محصورة بين كل فاتورة وحركة رصيد مقابل عليها بنسبة 100%.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h4>3 · الشات مع التحويل — الميزة المميّزة</h4>
+  <p>محادثات فردية مشفّرة بين المستخدمين، مع زر تحويل مدمج في الفقاعة النصية: يكتب المستخدم «سأحول لك نصيبك» ثم يرسل المبلغ من نفس الشاشة، فيظهر إيصال التحويل كرسالة قابلة للنقر داخل المحادثة. التحويل ضمن طلبات التقسيم (تقسيم فاتورة) يُختصر إلى ثلاث نقرات.</p>
+  <ul class="tight">
+    <li><b>نطاق MVP:</b> شات نصي فردي + تحويل مدمج + إشعارات؛ التأخير في: المجموعات، الوسائط، القوالب الجاهزة.</li>
+    <li><b>معيار القبول:</b> انسجام محاسبي تام — لا يمكن أن تظهر رسالة تحويل ناجحة دون حركة رصيد مقابلة موثقة، والعكس صحيح.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h4>4 · الحسابات الفرعية — الميزة العائلية الراسخة</h4>
+  <p>حسابات مخصصة للأبناء والعمالة المنزلية تحت حساب الوالد: رصيد منفصل، حد إنفاق يومي أو أسبوعي، وموافقة والدية على العمليات فوق الحد أو على أي عملية حسب الإعداد، مع إشعار فوري وكل عملية مسجلة في تقرير شهري مبسط.</p>
+  <ul class="tight">
+    <li><b>نطاق MVP:</b> حتى ثلاثة حسابات فرعية لكل حساب رئيسي، حدود يومية وأسبوعية، وتقرير صرف شهري؛ تقارير التحليل المتقدم تأتي لاحقاً.</li>
+    <li><b>معيار القبول:</b> رفض أي عملية تتجاوز الحد في اللحظة نفسها مع إشعار الوالد، وشفافية كاملة — لا حركة رصيد في الحساب الفرعي دون أثر موثق.</li>
+  </ul>
+</div>
+
+<p class="small-note">عجلة الحظ الموجودة في النموذج الأولي تُعامل كمكوّن تسويقي لاحق لا كميزة إطلاق: تُعاد صياغتها كبرنامج ولاء بميزانية جوائز محدودة ونسب ربح محسومة محاسبياً، بعد استقرار المؤشرات الأساسية.</p>
+
+<!-- ═══ 6. البنية التقنية ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 06</div>
+  <div class="sec-title">البنية التقنية المقترحة</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">المبدأ التقني الحاكم: <b>اشترِ ما هو سلعة، وابنِ ما هو تمييز</b>. المصادقة والإشعارات وقواعد البيانات المُدارة سلع جاهزة تُشترى؛ أما منطق المحاسبة المزدوجة وتجربة الشات-التحويل فهما التمييز الحقيقي ويُبنيان بعناية. هذه الفلسفة تختصر شهوراً من البناء الذاتي لطبقات لا يراها المستخدم ولا تدفع للمنتج.</p>
+
+<h3>6.1 معمارية تطبيق Flutter</h3>
+<p>يُبنى التطبيق بمعمارية طبقية تفصل العرض عن المنطق: طبقة العرض (شاشات Flutter وحالاتها)، وطبقة التطبيق (حالات الاستخدام مثل «تنفيذ تحويل»)، وطبقة المجال (كيانات: حساب، معاملة، محادثة، حساب فرعي)، وطبقة البيانات (مستودعات تتصل بالباك-إند). إدارة الحالة عبر <b>Riverpod</b> لقابلية اختبارها وصراع أخطائها وقت الترجمة لا وقت التشغيل، مع go_router للملاحة، وHive/Drift لتخزين السجل دون اتصال، وFirebase Cloud Messaging للإشعارات الفورية. كل طبقة قابلة للاستبدال منفردة — قرار يحمي المشروع من إعادة البناء الكاملة عند تغيير مزود الباك-إند.</p>
+
+<h3>6.2 خيارات الباك-إند</h3>
+<table>
+  <thead><tr><th style="width:18%">المعيار</th><th style="width:38%">Supabase (التوصية للانطلاق)</th><th>Node.js + PostgreSQL مخصص</th></tr></thead>
+  <tbody>
+    <tr><td class="k">سرعة الوصول</td><td>مصادقة وقاعدة بيانات وRealtime جاهزة خلال أيام</td><td>6–10 أسابيع بناء قبل أول ميزة</td></tr>
+    <tr><td class="k">التحكم بالمنطق المالي</td><td>كامل عبر جداول مزدوجة القيد وEdge Functions</td><td>كامل بلا حدود</td></tr>
+    <tr><td class="k">التكلفة الشهرية المبدئية</td><td>منخفضة (خطة 25 دولاراً ثم تصاعد حسب الاستخدام)</td><td>استضافة وفريق تشغيل أعلى منذ اليوم الأول</td></tr>
+    <tr><td class="k">مسار الترحيل</td><td>قابل للنقل — PostgreSQL قياسي يمكن سحبه عند الحاجة</td><td>لا يحتاج ترحيلاً</td></tr>
+  </tbody>
+</table>
+<p>التوصية: الانطلاق بـ Supabase مع <b>مخطط محاسبي صارم مزدوج القيد</b> — جدول معاملات وجدول قيود، بحيث لا يُعدَّل رصيد إلا عبر قيد متوازن — وهذا ما يجعل الترحيل لاحقاً إلى باك-إند مخصص عملية هجرة بيانات لا إعادة تصميم.</p>
+
+<h3>6.3 الأمان والتشغيل</h3>
+<ul class="tight">
+  <li><b>الهوية:</b> تسجيل برقم الجوال مع OTP عبر مزود سعودي، ورموز JWT قصيرة العمر مع تجديد آمن، ورمز مرور محلي وبصمة لتأكيد العمليات.</li>
+  <li><b>البيانات:</b> تشفير TLS 1.3 أثناء النقل، وتشفير القاعدة أثناء التخزين، وتجزيء الوصول بأقل امتياز، وسجل تدقيق غير قابل للتعديل لكل حركة مالية.</li>
+  <li><b>التشغيل:</b> خط CI/CD عبر GitHub Actions مع بيئات منفصلة للتطوير والاختبار والإنتاج، ورصد أعطال Sentry، ولوحة مؤشرات تشغيلية أساسية (زمن الاستجابة، نسبة نجاح المعاملات، الأعطال) منذ أسبوع النشر الأول، واختبار اختراق خارجي قبل البيتا.</li>
+</ul>
+<!-- ═══ 7. خارطة الطريق ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 07</div>
+  <div class="sec-title">خارطة الطريق والجدول الزمني</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">خارطة الطريق مقسمة إلى ثلاث مراحل مدتها 24 أسبوعاً، كل مرحلة تنتهي بمعايير خروج صريحة تُقيّم قبل الانتقال للتي بعدها — لا انتقال بالتقويم بل بالإنجاز. هذا الترتيب يضع الأساس التقني الصحيح أولاً، ثم يجمع الميزات المميّزة، ثم يخرج النسخة إلى مستخدمين حقيقيين مع ملف جذب جاهز لجولة التمويل التالية.</p>
+
+<div class="phase">
+  <div class="ph-head"><h4>المرحلة الأولى — أساس المنتج</h4><span class="weeks">الأسابيع 1–8</span></div>
+  <p>تثبيت نظام التصميم في Figma وترحيل شاشات النموذج الأولي إلى مكوّنات Flutter موثقة، وإنشاء مشروع Flutter موحد بمعمارية الطبقات، وإعداد Supabase بالمخطط المحاسبي المزدوج القيد، ومصادقة OTP كاملة، ثم بناء المحفظة: رصيد، سجل، تحويل داخلي، وإيداع عبر مزود الدفع. الفريق يكتمل خلال هذه المرحلة (المصمم أولاً ثم المهندسان).</p>
+  <div class="exit"><div class="t">معايير الخروج</div>
+    <ul><li>تسجيل دخول حقيقي بـ OTP وإنهاء جولة اختبار استخدام أولى على تدفق التسجيل</li><li>تحويل داخلي مكتمل بين حسابين تجريبيين بمحاسبة متوازنة 100%</li><li>تغطية اختبارات آلية لا تقل عن 60% لطبقة المنطق المالي</li></ul>
+  </div>
+</div>
+
+<div class="phase">
+  <div class="ph-head"><h4>المرحلة الثانية — الميزات المميّزة والنسخة المغلقة</h4><span class="weeks">الأسابيع 9–16</span></div>
+  <p>بناء الشات مع التحويل المدمج، والحسابات الفرعية بحدودها وموافقاتها، ولوحة التاجر مع فواتير QR، ثم إصدار نسخة مغلقة (Closed Beta) لفريق موسع من 30–50 مستخدماً حقيقياً. في هذه المرحلة يُجرى اختبار الاختراق الخارجي، وتُبنى لوحة المؤشرات التشغيلية، ويُصقل الوضع الفاتح وإتاحة الوصول.</p>
+  <div class="exit"><div class="t">معايير الخروج</div>
+    <ul><li>شات-تحويل يعمل بانسجام محاسبي تام خلال جولة اختبار كاملة</li><li>تقرير اختبار اختراق مع معالجة النتائج الحرجة والشديدة</li><li>معدل إنجاز التحويل في اختبارات المستخدمين 90% أو أكثر</li></ul>
+  </div>
+</div>
+
+<div class="phase">
+  <div class="ph-head"><h4>المرحلة الثالثة — الإطلاق التجريبي</h4><span class="weeks">الأسابيع 17–24</span></div>
+  <p>إطلاق دفعة تجريبية عامة محدودة (300–500 مستخدم) مع 20–30 تاجراً في نطاق جغرافي واحد، وبرنامج تجربة مبكر يحفّز التحويلات الأولى، وتركيب أدوات تحليل المنتج وقياس مؤشرات القسم 09 أسبوعياً. بالتوازي يُعدّ ملف الجذب: بيانات الاستخدام الحقيقية، وشهادات التجار، ومسار التنظيمي المقترح — ليكون العرض على الحاضنات وجهات التمويل عرضاً بأرقام لا بوعود.</p>
+  <div class="exit"><div class="t">معايير الخروج</div>
+    <ul><li>500 معاملة حقيقية مكتملة دون أي خلل توازن محاسبي</li><li>احتفاظ أسبوعي 35% أو أكثر في الدفعة التجريبية</li><li>20 تاجراً نشطاً أسبوعياً على الأقل يقبلون QR بانتظام</li></ul>
+  </div>
+</div>
+
+<!-- ═══ 8. الفريق والتقديرات المالية ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 08</div>
+  <div class="sec-title">الفريق والتقديرات المالية</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">حجم الفريق مصمم ليكون أصغر حجم يغطي الطريق كاملاً: خمسة أدوار، اثنان منها جزئيان في الأشهر الأولى. الرواتب تقديرية بنطاقات سوق تطوير البرمجيات السعودي الحالية وتشمل البدلات الأساسية دون مزايا إضافية كبرى، والغرض منها تحديد حجم التمويل لا التفاوض على العقود.</p>
+
+<h3>8.1 هيكل الفريق الأساسي</h3>
+<table>
+  <thead><tr><th style="width:26%">الدور</th><th style="width:14%">العدد</th><th style="width:26%">الراتب الشهري التقديري</th><th>المسؤولية المحورية</th></tr></thead>
+  <tbody>
+    <tr><td class="k">مهندس Flutter أول</td><td>1</td><td>18,000 – 24,000 ريال</td><td>بناء التطبيق كاملاً وملكية جودة الكود والأداء</td></tr>
+    <tr><td class="k">مهندس باك-إند</td><td>1</td><td>16,000 – 22,000 ريال</td><td>المخطط المحاسبي، المصادقة، التكاملات، والأمان</td></tr>
+    <tr><td class="k">مصمم UX/UI</td><td>1</td><td>12,000 – 16,000 ريال</td><td>نظام التصميم، النماذج، واختبارات قابلية الاستخدام</td></tr>
+    <tr><td class="k">مدير المنتج / المؤسس</td><td>1</td><td>12,000 – 18,000 ريال</td><td>الأولويات، اكتساب التجار، والعلاقة مع وجهات التمويل</td></tr>
+    <tr><td class="k">أخصائي جودة (جزئي)</td><td>0.5</td><td>8,000 – 12,000 ريال</td><td>خطط الاختبار، الاختبارات الآلية، وضمان معايير القبول</td></tr>
+  </tbody>
+</table>
+<p class="small-note">إجمالي رواتب الفريق عند النطاق الأوسط يقارب 78,000 ريال شهرياً. البنية التحتية في الأشهر الأولى لا تتجاوز بضع مئات من الريالات شهرياً بفضل المزودات المُدارة، وترتفع تدريجياً مع نمو الاستخدام.</p>
+
+<h3>8.2 توزيع ميزانية السنة الأولى</h3>
+<figure>
+  <div class="chart-box" style="display:flex; flex-wrap:wrap; align-items:center; gap:18px;">
+    <svg width="252" height="252" viewBox="0 0 252 252" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="توزيع الميزانية" style="flex:0 0 auto; margin:0 auto;">
+      <!-- donut: r=90, C=565.49, start at top via rotate(-90 126 126) -->
+      <g transform="rotate(-90 126 126)">
+        <circle cx="126" cy="126" r="90" fill="none" stroke="#4c3955" stroke-width="36"
+          stroke-dasharray="350.60 565.49" stroke-dashoffset="0"/>
+        <circle cx="126" cy="126" r="90" fill="none" stroke="#6f4d80" stroke-width="36"
+          stroke-dasharray="67.86 565.49" stroke-dashoffset="-350.60"/>
+        <circle cx="126" cy="126" r="90" fill="none" stroke="#8752a1" stroke-width="36"
+          stroke-dasharray="56.55 565.49" stroke-dashoffset="-418.46"/>
+        <circle cx="126" cy="126" r="90" fill="none" stroke="#a97cc0" stroke-width="36"
+          stroke-dasharray="56.55 565.49" stroke-dashoffset="-475.01"/>
+        <circle cx="126" cy="126" r="90" fill="none" stroke="#cbb6d8" stroke-width="36"
+          stroke-dasharray="33.93 565.49" stroke-dashoffset="-531.56"/>
+      </g>
+      <text x="126" y="120" font-size="20" font-weight="800" fill="#1b191c" text-anchor="middle" font-family="Cairo, sans-serif">1.2 مليون</text>
+      <text x="126" y="144" font-size="12.5" fill="#767079" text-anchor="middle" font-family="Tajawal, sans-serif">ريال سعودي · 12 شهراً</text>
+    </svg>
+    <div style="flex:1 1 240px; min-width:230px;">
+      <div class="legend-grid" style="flex-direction:column; gap:10px;">
+        <div class="legend-item"><span class="dot" style="background:#4c3955"></span> رواتب الفريق — 62% ≈ 745 ألف ريال</div>
+        <div class="legend-item"><span class="dot" style="background:#6f4d80"></span> بنية تحتية وسحابة وإشعارات — 12% ≈ 145 ألف</div>
+        <div class="legend-item"><span class="dot" style="background:#8752a1"></span> أدوات وتراخيص واختبار اختراق — 10% ≈ 120 ألف</div>
+        <div class="legend-item"><span class="dot" style="background:#a97cc0"></span> تسويق واكتساب الدفعة التجريبية — 10% ≈ 120 ألف</div>
+        <div class="legend-item"><span class="dot" style="background:#cbb6d8"></span> احتياطي طوارئ — 6% ≈ 70 ألف</div>
+      </div>
+    </div>
+  </div>
+  <figcaption>توزيع تقديري لتمويل بذري مقداره 1.2 مليون ريال يغطي 6 أشهر تطوير و6 أشهر تشغيل وتحسين</figcaption>
+</figure>
+
+<p>منطق التوزيع: الرواتب تستحوذ على الحصة الأكبر لأن المنتج في هذه المرحلة هو الفريق نفسه، بينما تبقى البنية التحتية منخفضة بوعي بفضل المزودات المُدارة، ويُخصص احتياطي طوارئ صريح بدل تركه ضمنياً في بنود أخرى. ما لا تموله هذه الجولة: ترخيص تشغيلي كامل وحملات تسويق وطنية — فهي تخص جولة لاحقة بعد إثبات الجذب، وهذا بالضبط ما يجعل المخاطرة المطلوبة الآن في أدنى مستوياتها.</p>
+
+<!-- ═══ 9. الامتثال والمؤشرات والخطوات القادمة ═══ -->
+<div class="chapter-header">
+  <div class="sec-tag">القسم 09</div>
+  <div class="sec-title">الامتثال ومؤشرات النجاح والخطوات القادمة</div>
+  <div class="sec-divider"></div>
+</div>
+
+<p class="lead">المسار التنظيمي يُدار بمنطق مرحلي واضح لا بالتسرع ولا بالتجنّب. المرحلة الحالية تعمل بأموال افتراضية كلياً داخل بيئة اختبار مغلقة، ولا تُلمس أموال حقيقية إلا داخل إطار مرخص — عبر بيئة ساما الرملية عند بلوغ قوة جذب مبرهنة، أو عبر شراكة مع مؤسسة مالية مرخصة تعمل أومني باي فوق بنيتها. هذا الترتيب يحمي المشروع والمالكين معاً، ويجعل أي حوار مع البنك المركزي حواراً من موضع قوة: منتج مبني، مؤشرات صاعدة، وطلب واضح.</p>
+
+<h3>9.1 مؤشرات النجاح المستهدفة</h3>
+<table>
+  <thead><tr><th style="width:38%">المؤشر</th><th style="width:22%">الهدف بعد 6 أشهر من الإطلاق</th><th>لماذا هذا المؤشر</th></tr></thead>
+  <tbody>
+    <tr><td class="k">إكمال التسجيل والتفعيل</td><td>75% أو أكثر</td><td>يقيس صحة تدفق الدخول وتجربة الأمان المبكرة</td></tr>
+    <tr><td class="k">التفعيل خلال أسبوع من التحميل</td><td>40% أو أكثر</td><td>أول علامة على قيمة المنتج المدركة</td></tr>
+    <tr><td class="k">الاحتفاظ بعد 30 يوماً (D30)</td><td>35% أو أكثر</td><td>المؤشر الحاكم للاستمرارية اليومية للمحفظة</td></tr>
+    <tr><td class="k">حصة التحويل من داخل الشات</td><td>25% أو أكثر</td><td>يثبت أن الميزة المميّزة تُستخدم لا تُتمنى</td></tr>
+    <tr><td class="k">نشط أسبوعي من نشط شهري</td><td>45% أو أكثر</td><td>يقيس تشكّل عادة الاستخدام</td></tr>
+    <tr><td class="k">تجار نشطون أسبوعياً</td><td>20 تاجراً</td><td>يقيس جدوى جانب العرض في سوق المدفوعات المصغّرة</td></tr>
+  </tbody>
+</table>
+
+<h3>9.2 الخطوات التنفيذية للأسبوعين القادمين</h3>
+<ol class="steps">
+  <li><b>تثبيت نظام التصميم:</b> توكنات الألوان والخطوط ومكوّنات النموذج في ملف Figma موثق خلال أسبوعين.</li>
+  <li><b>مشروع Flutter موحد:</b> إنشاء المستودع بمعمارية الطبقات وترحيل شاشتين كاملتين كنموذج إثبات لجودة الترحيل.</li>
+  <li><b>مخطط المحاسبة المزدوجة:</b> بناء جداول القيود في Supabase واختبار سيناريوهات التحويل والإلغاء عليها.</li>
+  <li><b>تجنيد مهندس Flutter الأول:</b> فتح المسار فوراً فهو العامل الحاكم في جدول المرحلة الأولى بأكمله.</li>
+  <li><b>حجز لقاءات العرض:</b> التواصل مع حاضنتين ماليتين وبرنامج تقنية مالية سعودي واحد، بهذا المستند وخطة المؤشرات.</li>
+</ol>
+</div>
+
+<!-- ═══════════════ الخاتمة ═══════════════ -->
+<div class="ending">
+  <div class="end-glow"></div>
+  <div class="end-inner">
+    <div class="end-title">المال حيث تتحدث<br>العلاقات اليومية</div>
+    <div class="end-line"></div>
+    <div class="end-sub">أومني باي ليس محفظة أخرى في متجر التطبيقات؛ إنه الطبقة الاجتماعية فوق شبكات الدفع القائمة — تحويل داخل المحادثة، حسابات عائلية بحكمة، وتاجر محلي يقبل دفعك برمز واحد. الخطة جاهزة، والأرقام محسومة، والخطوة التالية قرار.</div>
+    <div class="end-brand">UMI PAY</div>
+    <div class="end-contact">فريق أومني باي · أكتوبر 2026 · وثيقة خطة التطوير الإصدار 1.0</div>
+  </div>
+</div>
+
+</body>
+</html>

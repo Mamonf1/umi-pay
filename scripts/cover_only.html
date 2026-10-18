@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>خطة تطوير تطبيق أومني باي UMI PAY</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: 794px 1123px; margin: 0; }
+:root{
+  --page-bg:#f0eff0; --section-bg:#f1f0f2; --card-bg:#e9e5ea; --stripe:#edebee;
+  --header-fill:#4c3955; --cover-block:#6f4d80; --border:#bbaec1; --icon:#8752a1;
+  --accent:#8029ac; --text:#1b191c; --muted:#767079;
+  --cov-bg:#131214; --cov-accent:#c182e1; --cov-text:#e1dfe2; --cov-muted:#938e96;
+  --cov-card:#261f29; --cov-border:#52415b;
+}
+html,body{ margin:0; padding:0; width:794px; background:var(--page-bg); color:var(--text);
+  font-family:'Tajawal','Cairo',sans-serif; font-size:15px; line-height:1.9; }
+@media screen{
+  html{ height:auto; display:flex; justify-content:center; background:#242029; }
+  body{ transform-origin:top center; scale:min(1, calc(100vw / 794)); margin:20px auto;
+        box-shadow:0 0 60px rgba(0,0,0,.4); }
+}
+*{ box-sizing:border-box; }
+p{ margin:0 0 12px; text-align:justify; }
+b,strong{ font-weight:700; }
+
+/* ═══════════ COVER ═══════════ */
+.cover{ width:794px; height:1123px; position:relative; background:var(--cov-bg);
+  color:var(--cov-text); break-after:page; overflow:hidden; }
+.cov-glow{ position:absolute; border-radius:50%; }
+.g1{ width:62%; height:34%; top:6%; right:0; opacity:.07;
+  background:radial-gradient(circle at 70% 40%, var(--cov-accent), transparent 70%); }
+.g2{ width:58%; height:32%; bottom:5%; left:0; opacity:.06;
+  background:radial-gradient(circle at 30% 60%, var(--cov-accent), transparent 70%); }
+.cov-frame{ position:absolute; top:80px; bottom:80px; left:60px; right:60px;
+  border:2px solid var(--cov-accent); opacity:.85; }
+.cov-content{ position:absolute; inset:0; }
+.cov-kicker{ position:absolute; top:138px; right:110px; font-size:13px; font-weight:500;
+  color:var(--cov-accent); max-width:560px; line-height:1.6; }
+.cov-hero{ position:absolute; top:236px; right:110px; font-family:'Cairo',sans-serif;
+  font-size:78px; font-weight:900; color:var(--cov-text); line-height:1.15;
+  text-shadow:0 0 40px rgba(193,130,225,.25); }
+.cov-latin{ position:absolute; top:352px; right:112px; font-family:'Cairo',sans-serif;
+  font-size:17px; font-weight:700; letter-spacing:6px; color:var(--cov-accent); }
+.cov-summary{ position:absolute; top:436px; right:110px; width:520px; font-size:15.5px;
+  line-height:1.95; color:var(--cov-muted); text-align:justify; }
+.cov-stats{ position:absolute; top:640px; right:110px; left:110px; display:flex;
+  flex-wrap:wrap; gap:14px; }
+.cov-stat{ flex:1 1 180px; min-width:150px; max-width:100%; background:var(--cov-card);
+  border-radius:10px; padding:16px 18px; }
+.cov-stat .n{ font-family:'Cairo',sans-serif; font-size:24px; font-weight:800;
+  color:var(--cov-accent); line-height:1.2; }
+.cov-stat .l{ font-size:11.5px; color:var(--cov-muted); line-height:1.6; margin-top:2px; }
+.cov-meta{ position:absolute; top:866px; right:110px; font-size:15px; color:var(--cov-text); font-weight:700; }
+.cov-meta2{ position:absolute; top:896px; right:110px; max-width:560px; font-size:13px; color:var(--cov-muted); line-height:1.7; }
+.cov-date{ position:absolute; bottom:130px; right:110px; font-size:12px;
+  color:var(--cov-muted); letter-spacing:2px; }
+.cov-doc{ position:absolute; bottom:130px; left:110px; font-size:12px;
+  color:var(--cov-muted); letter-spacing:2px; }
+
+/* ═══════════ FLOW CONTENT ═══════════ */
+.main-content{ padding:58px 64px 46px 64px; background:var(--page-bg); }
+.chapter-header{ break-after:avoid; break-inside:avoid; margin-top:26px; }
+.chapter-header:first-child{ margin-top:0; }
+.sec-tag{ display:inline-block; font-family:'Cairo',sans-serif; font-size:12px; font-weight:800;
+  color:var(--accent); background:rgba(128,41,172,.08); border:1px solid var(--border);
+  border-radius:20px; padding:1px 14px; margin-bottom:8px; }
+.sec-title{ font-family:'Cairo',sans-serif; font-size:28px; font-weight:800; color:var(--header-fill);
+  line-height:1.35; margin:0 0 4px; }
+.sec-divider{ width:64px; height:3px; background:var(--accent); border-radius:2px; margin:6px 0 14px; }
+h3{ font-family:'Cairo',sans-serif; font-size:19px; font-weight:800; color:var(--header-fill);
+  margin:16px 0 8px; break-after:avoid; }
+h4{ font-family:'Cairo',sans-serif; font-size:17px; font-weight:700; color:var(--header-fill);
+  margin:12px 0 6px; break-after:avoid; }
+.lead{ font-size:15px; color:var(--text); }
+.small-note{ font-size:12.5px; color:var(--muted); line-height:1.7; }
+
+/* stat row */
+.stat-row{ display:flex; flex-wrap:wrap; gap:12px; margin:14px 0 6px; break-inside:avoid; }
+.stat-card{ flex:1 1 150px; min-width:140px; max-width:100%; background:var(--card-bg);
+  border-top:3px solid var(--accent); border-radius:10px; padding:14px 15px; }
+.stat-card .n{ font-family:'Cairo',sans-serif; font-size:26px; font-weight:900; color:var(--accent); line-height:1.25; }
+.stat-card .l{ font-size:12px; color:var(--muted); line-height:1.6; margin-top:3px; }
+
+/* cards */
+.card{ background:var(--card-bg); border-radius:12px; padding:16px 18px; margin-bottom:12px;
+  break-inside:avoid; border-right:4px solid var(--icon); }
+.card h4{ margin-top:0; }
+.card p{ margin-bottom:8px; }
+ul.tight{ margin:6px 0 10px; padding-right:20px; }
+ul.tight li{ margin-bottom:5px; break-inside:avoid; text-align:right; }
+ol.steps{ margin:6px 0 10px; padding-right:22px; }
+ol.steps li{ margin-bottom:7px; text-align:right; }
+
+/* tables */
+table{ width:100%; border-collapse:collapse; margin:12px 0 8px; break-inside:avoid;
+  font-size:13.5px; }
+thead{ display:table-header-group; }
+tr{ break-inside:avoid; }
+th{ background:var(--header-fill); color:#fff; font-family:'Cairo',sans-serif; font-weight:700;
+  padding:9px 12px; text-align:right; font-size:13.5px; }
+td{ padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.7; }
+tbody tr:nth-child(odd) td{ background:var(--stripe); }
+td.k{ font-weight:700; color:var(--header-fill); white-space:nowrap; }
+
+/* figures */
+figure{ display:block; width:100%; margin:16px auto 6px; break-inside:avoid; }
+figcaption{ font-size:12.5px; color:var(--muted); text-align:center; margin-top:8px; }
+.chart-box{ background:var(--section-bg); border:1px solid var(--border); border-radius:12px;
+  padding:18px 16px 10px; }
+.legend-grid{ display:flex; flex-wrap:wrap; gap:8px 22px; margin:10px 4px 6px; }
+.legend-item{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text); }
+.legend-item .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+/* roadmap phase */
+.phase{ background:var(--card-bg); border-radius:12px; padding:16px 18px; margin-bottom:12px;
+  break-inside:avoid; border-right:4px solid var(--header-fill); }
+.phase .ph-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px; }
+.phase h4{ margin:0; }
+.phase .weeks{ font-family:'Cairo',sans-serif; font-size:12.5px; font-weight:700; color:var(--accent); }
+.exit{ background:var(--section-bg); border-radius:8px; padding:10px 14px; margin-top:10px; }
+.exit .t{ font-size:12.5px; font-weight:800; color:var(--accent); margin-bottom:4px;
+  font-family:'Cairo',sans-serif; }
+.exit ul{ margin:0; padding-right:18px; font-size:13px; }
+.exit li{ margin-bottom:3px; }
+
+/* ending */
+.ending{ width:794px; height:1123px; position:relative; background:var(--cov-bg);
+  color:var(--cov-text); break-before:page; overflow:hidden; }
+.end-glow{ position:absolute; width:70%; height:40%; top:30%; right:15%; opacity:.07;
+  background:radial-gradient(circle, var(--cov-accent), transparent 70%); border-radius:50%; }
+.end-inner{ position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:0 90px; }
+.end-line{ width:70px; height:2px; background:var(--cov-accent); margin:26px 0; }
+.end-title{ font-family:'Cairo',sans-serif; font-size:40px; font-weight:900; line-height:1.5; }
+.end-sub{ font-size:15px; color:var(--cov-muted); line-height:2; max-width:520px; }
+.end-brand{ font-family:'Cairo',sans-serif; font-size:15px; font-weight:800;
+  letter-spacing:5px; color:var(--cov-accent); margin-top:34px; }
+.end-contact{ font-size:12.5px; color:var(--cov-muted); margin-top:10px; letter-spacing:1px; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="cov-glow g1"></div>
+  <div class="cov-glow g2"></div>
+  <div class="cov-frame"></div>
+  <div class="cov-content">
+    <div class="cov-kicker">وثيقة خطة تطوير منتج — مُعدّة للعرض على الحاضنات ووجهات التمويل المبكر</div>
+    <div class="cov-hero">أومني باي</div>
+    <div class="cov-latin">UMI PAY · DIGITAL WALLET</div>
+    <div class="cov-summary">خارطة طريق تنفيذية لتحويل نموذج «أومني باي» الأولي — محفظة رقمية عربية تجمع التحويلات الفورية والدفع داخل المحادثة والمتاجر المصغّرة والحسابات الفرعية العائلية — إلى منتج Flutter قابل للإطلاق في السوق السعودي خلال ستة أشهر، بدعم بنية تقنية آمنة واستراتيجية تصميم تضع التجربة العربية أولاً.</div>
+    <div class="cov-stats">
+      <div class="cov-stat"><div class="n">6 أشهر</div><div class="l">من الانطلاق حتى نسخة الإطلاق التجريبي MVP</div></div>
+      <div class="cov-stat"><div class="n">4 ميزات</div><div class="l">أولوية قصوى: المحفظة، المتاجر، الشات، الحسابات الفرعية</div></div>
+      <div class="cov-stat"><div class="n">85%</div><div class="l">من مدفوعات التجزئة في السعودية إلكترونية (ساما 2025)</div></div>
+      <div class="cov-stat"><div class="n">14+ مليون</div><div class="l">مستخدم لأكبر محفظة سعودية — دليل على نضج الطلب</div></div>
+    </div>
+    <div class="cov-meta">فريق أومني باي</div>
+    <div class="cov-meta2">نطاق الوثيقة: تحليل الوضع الحالي · السوق والمنافسون · استراتيجية التصميم · نطاق الميزات · البنية التقنية · خارطة الطريق والتقديرات المالية</div>
+    <div class="cov-date">أكتوبر 2026 · الإصدار 1.0</div>
+    <div class="cov-doc">UMI-PLAN-2026</div>
+  </div>
+</div>
+</body>
+</html>

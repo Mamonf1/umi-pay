@@ -1,0 +1,944 @@
+<!-- ═══ UMI MODAL HTML STRUCTURE ═══ -->
+<div class="umi-modal-overlay" id="umiModalOverlay" onclick="closeUmiModal(event)">
+  <div class="umi-modal" id="umiModal" onclick="event.stopPropagation()">
+    <button class="umi-modal-close" onclick="closeUmiModalDirect()"><i class="fas fa-times"></i></button>
+    <div class="umi-modal-header">
+      <div class="umi-modal-icon info" id="umiModalIcon"><i class="fas fa-info-circle"></i></div>
+      <div class="umi-modal-title" id="umiModalTitle">عنوان النافذة</div>
+      <div class="umi-modal-subtitle" id="umiModalSubtitle">نصف الوصف أو التوضيح هنا</div>
+    </div>
+    <div class="umi-modal-body" id="umiModalBody">
+      <!-- محتوى ديناميكي اختياري -->
+    </div>
+    <div class="umi-modal-actions" id="umiModalActions">
+      <!-- أزرار ديناميكية -->
+    </div>
+    <div class="umi-modal-toast" id="umiModalToast"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   UMI PAY — JAVASCRIPT CORE & ENGINE
+   ═══════════════════════════════════════════ */
+
+// قاعدة البيانات المحلية والبيانات الافتراضية
+let db = {
+  user: null,
+  contacts: [
+    {id: 1, name: "سارة أحمد", phone: "0501234567", avatar: "👩", rank: "pro"},
+    {id: 2, name: "محمد العلي", phone: "0559876543", avatar: "👨", rank: "gold"},
+    {id: 3, name: "شركة الأمانة", phone: "0561112233", avatar: "🏢", rank: "merchant"}
+  ],
+  transactions: [
+    {id: 1, type: "in", title: "استلام تحويل", subtitle: "من سارة أحمد", amount: "+250.00", currency: "SAR", date: "اليوم، 14:30"},
+    {id: 2, type: "out", title: "شراء بطاقة متجر", subtitle: "متجر أومني الرقمي", amount: "-45.00", currency: "SAR", date: "أمس، 09:15"},
+    {id: 3, type: "in", title: "جائزة عجلة الحظ", subtitle: "عجلة الحظ اليومية", amount: "+10.00", currency: "SAR", date: "منذ 3 أيام"}
+  ],
+  chats: [
+    {id: 1, name: "الدعم الفني UMI", avatar: "💎", lastMsg: "مرحباً بك في أومني، كيف يمكننا مساعدتك اليوم؟", time: "10:00", unread: 1},
+    {id: 2, name: "سارة أحمد", avatar: "👩", lastMsg: "تم إرسال المبلغ، شكراً لك!", time: "أمس", unread: 0}
+  ],
+  stores: [
+    {id: 1, name: "متجر أومني الرقمي", cat: "digital", rating: "4.9", reviews: "128", logo: "💎", desc: "بطاقات رقمية، اشتراكات، وعملات ألعاب"},
+    {id: 2, name: "سوبرماركت البركة", cat: "groceries", rating: "4.7", reviews: "94", logo: "🛒", desc: "مواد غذائية ومستلزمات منزلية توصيل سريع"},
+    {id: 3, name: "مقهى ومحمصة البن", cat: "food", rating: "4.8", reviews: "210", logo: "☕", desc: "أجود أنواع القهوة والمشروبات الساخنة"}
+  ],
+  subAccounts: [
+    {id: 1, name: "حساب العائلة (الطفل)", type: "child", balance: "150.00", limit: "500.00", avatar: "👶", status: "active"},
+    {id: 2, name: "حساب المساعد (العمالة)", type: "worker", balance: "420.00", limit: "1000.00", avatar: "🛠️", status: "active"}
+  ],
+  wheelPool: 14250.50,
+  lastSpinDate: null
+};
+
+// تهيئة التطبيق عند التحميل
+window.addEventListener('DOMContentLoaded', () => {
+  setInterval(updateClock, 1000);
+  updateClock();
+  
+  // التحقق من وجود مستخدم مسجل مسبقاً في localStorage
+  const savedUser = localStorage.getItem('umi_user');
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      setTimeout(() => splash.remove(), 500);
+    }
+    if (savedUser) {
+      db.user = JSON.parse(savedUser);
+      go('wallet');
+      showToast('أهلاً بك مجدداً يا ' + db.user.name, 'success');
+    } else {
+      renderAuth();
+    }
+  }, 1200);
+});
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const clockEl = document.getElementById('clock');
+  if (clockEl) clockEl.innerText = `${h}:${m}`;
+}
+
+function showLoading(show) {
+  const l = document.getElementById('loading');
+  if (l) l.classList.toggle('show', show);
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerText = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => {
+    t.className = 'toast';
+  }, 3000);
+}
+
+// نظام التنقل بين الشاشات
+let currentRoute = '';
+function go(route) {
+  currentRoute = route;
+  const nav = document.getElementById('nav');
+  if (nav) {
+    nav.style.display = db.user ? 'flex' : 'none';
+    document.querySelectorAll('.nav-i').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('data-r') === route);
+    });
+  }
+  
+  const spa = document.getElementById('spa');
+  if (!spa) return;
+  spa.innerHTML = '';
+  
+  switch(route) {
+    case 'auth': renderAuth(); break;
+    case 'wallet': renderWallet(); break;
+    case 'services': renderServices(); break;
+    case 'chats': renderChats(); break;
+    case 'wheel': renderWheel(); break;
+    case 'profile': renderProfile(); break;
+    default: renderWallet();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   شاشة المصادقة (تسجيل الدخول / إنشاء حساب)
+   ═══════════════════════════════════════════ */
+function renderAuth() {
+  const spa = document.getElementById('spa');
+  if (!spa) return;
+  const nav = document.getElementById('nav');
+  if (nav) nav.style.display = 'none';
+  
+  spa.innerHTML = `
+    <div class="auth ve">
+      <div class="auth-logo">💎</div>
+      <div class="auth-title">UMI PAY</div>
+      <div class="auth-sub">محفظة إلكترونية متكاملة</div>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">تسجيل دخول</button>
+          <button class="auth-tab" id="tabRegBtn" onclick="switchAuthTab('register')">حساب جديد</button>
+        </div>
+        <div id="authFormContent">
+          <!-- نموذج تسجيل الدخول الافتراضي -->
+          <div class="fld">
+            <label>رقم الجوال</label>
+            <input type="tel" id="loginPhone" placeholder="05xxxxxxxx" value="0500000000">
+          </div>
+          <div class="fld">
+            <label>رمز المرور</label>
+            <input type="password" id="loginPin" placeholder="••••" value="1234">
+          </div>
+          <button class="btn btn-gold btn-block" onclick="handleLogin()">دخول للمحفظة</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function switchAuthTab(mode) {
+  const loginBtn = document.getElementById('tabLoginBtn');
+  const regBtn = document.getElementById('tabRegBtn');
+  const content = document.getElementById('authFormContent');
+  
+  if (mode === 'login') {
+    loginBtn.classList.add('active');
+    regBtn.classList.remove('active');
+    content.innerHTML = `
+      <div class="fld">
+        <label>رقم الجوال</label>
+        <input type="tel" id="loginPhone" placeholder="05xxxxxxxx" value="0500000000">
+      </div>
+      <div class="fld">
+        <label>رمز المرور</label>
+        <input type="password" id="loginPin" placeholder="••••" value="1234">
+      </div>
+      <button class="btn btn-gold btn-block" onclick="handleLogin()">دخول للمحفظة</button>
+    `;
+  } else {
+    regBtn.classList.add('active');
+    loginBtn.classList.remove('active');
+    content.innerHTML = `
+      <div class="fld">
+        <label>الاسم الكامل</label>
+        <input type="text" id="regName" placeholder="أدخل اسمك الكريم">
+      </div>
+      <div class="fld">
+        <label>رقم الجوال</label>
+        <input type="tel" id="regPhone" placeholder="05xxxxxxxx">
+      </div>
+      <div class="fld">
+        <label>رمز المرور (4 أرقام)</label>
+        <input type="password" id="regPin" placeholder="••••" maxlength="4">
+      </div>
+      <button class="btn btn-violet btn-block" onclick="handleRegister()">إنشاء الحساب الآن</button>
+    `;
+  }
+}
+
+function handleLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pin = document.getElementById('loginPin').value.trim();
+  if (!phone || !pin) {
+    showToast('يرجى إدخال رقم الجوال ورمز المرور', 'error');
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    db.user = {
+      name: "مامون خضر",
+      phone: phone,
+      accountNo: "UMI-8849-2026",
+      balance: "5420.50",
+      currency: "SAR",
+      rank: "supervisor",
+      rankTitle: "مشرف نظام معتمد"
+    };
+    localStorage.setItem('umi_user', JSON.stringify(db.user));
+    showToast('مرحباً بك مجدداً!', 'success');
+    go('wallet');
+  }, 800);
+}
+
+function handleRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const pin = document.getElementById('regPin').value.trim();
+  if (!name || !phone || !pin) {
+    showToast('يرجى تعبئة كافة الحقول المطلوبة', 'error');
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    db.user = {
+      name: name,
+      phone: phone,
+      accountNo: "UMI-" + Math.floor(1000 + Math.random() * 9000) + "-2026",
+      balance: "100.00",
+      currency: "SAR",
+      rank: "user",
+      rankTitle: "عضو جديد"
+    };
+    localStorage.setItem('umi_user', JSON.stringify(db.user));
+    showToast('تم إنشاء الحساب بنجاح!', 'success');
+    go('wallet');
+  }, 800);
+}
+
+/* ═══════════════════════════════════════════
+   شاشة المحفظة الرئيسية
+   ═══════════════════════════════════════════ */
+function renderWallet() {
+  const spa = document.getElementById('spa');
+  if (!spa || !db.user) return;
+  
+  let txHtml = db.transactions.map(tx => `
+    <div class="tx">
+      <div class="txi ${tx.type}"><i class="fas fa-arrow-${tx.type === 'in' ? 'down' : 'up'}"></i></div>
+      <div class="txb">
+        <div class="txt">${tx.title}</div>
+        <div class="txm">${tx.subtitle} • ${tx.date}</div>
+      </div>
+      <div class="txa ${tx.type}">${tx.amount} <small>${tx.currency}</small></div>
+    </div>
+  `).join('');
+
+  spa.innerHTML = `
+    <div class="vc ve">
+      <!-- بطاقة الرصيد الرئيسية -->
+      <div class="bc">
+        <div class="wm">💎</div>
+        <div class="bt">
+          <div class="chip"></div>
+          <div class="bb">
+            <i class="fas fa-shield-alt"></i>
+            <span>${db.user.rankTitle}</span>
+          </div>
+        </div>
+        <div class="bl">الرصيد المتاح</div>
+        <div class="ba">${db.user.balance} <small>${db.user.currency}</small></div>
+        <div class="bu">حساب معتمد وآمن بالكامل</div>
+        <div class="bb2">
+          <span>حساب أومني باي</span>
+          <span class="acc">${db.user.accountNo}</span>
+        </div>
+      </div>
+
+      <!-- الإجراءات السريعة الأربعة -->
+      <div class="qa">
+        <div class="qi" onclick="openTransferModal()">
+          <i class="fas fa-paper-plane"></i>
+          <span>تحويل</span>
+        </div>
+        <div class="qi" onclick="openDepositModal()">
+          <i class="fas fa-plus-circle"></i>
+          <span>إيداع</span>
+        </div>
+        <div class="qi" onclick="openQrModal()">
+          <i class="fas fa-qrcode"></i>
+          <span>رمز QR</span>
+        </div>
+        <div class="qi" onclick="go('services')">
+          <i class="fas fa-th-large"></i>
+          <span>الخدمات</span>
+        </div>
+      </div>
+
+      <!-- قسم آخر المعاملات -->
+      <div class="st">آخر المعاملات</div>
+      <div class="txc">
+        ${txHtml}
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════
+   شاشة الخدمات المتكاملة
+   ═══════════════════════════════════════════ */
+function renderServices() {
+  const spa = document.getElementById('spa');
+  if (!spa) return;
+  
+  spa.innerHTML = `
+    <div class="vc ve">
+      <div class="vh" style="border-radius:18px;margin-bottom:16px">
+        <div class="vh-top">
+          <div>
+            <div class="vt">خدمات أومني المتكاملة</div>
+            <div class="vs">بوابات دفع، متاجر، وإدارة الحسابات</div>
+          </div>
+          <div class="hb"><i class="fas fa-cubes"></i></div>
+        </div>
+      </div>
+
+      <div class="st">المتاجر والشركاء</div>
+      <div class="stores-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="ابحث عن متجر، خدمة، أو بطاقة رقمية..." oninput="filterStores(this.value)">
+      </div>
+
+      <div class="cat-scroll">
+        <div class="cat-chip active" onclick="filterCat('all', this)">الكل</div>
+        <div class="cat-chip" onclick="filterCat('digital', this)">بطاقات رقمية</div>
+        <div class="cat-chip" onclick="filterCat('groceries', this)">مواد غذائية</div>
+        <div class="cat-chip" onclick="filterCat('food', this)">مكاوي ومقاهي</div>
+      </div>
+
+      <div id="storesContainer">
+        ${renderStoresList(db.stores)}
+      </div>
+
+      <div class="st" style="margin-top:24px">الحسابات الفرعية والصلاحيات</div>
+      <div style="margin-bottom:14px">
+        ${db.subAccounts.map(sub => `
+          <div class="sub-card" onclick="openSubAccountModal('${sub.id}')">
+            <div class="sub-head">
+              <div class="sub-avatar ${sub.type}">${sub.avatar}</div>
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <h4 style="font-size:14.5px;font-weight:900;color:var(--txt)">${sub.name}</h4>
+                  <span class="sub-type-chip sub-type-${sub.type}">${sub.type === 'child' ? 'حساب طفل' : 'حساب عمالة'}</span>
+                </div>
+                <div style="font-size:12px;color:var(--mut);font-weight:700">الرصيد: <b style="color:var(--g2)">${sub.balance} SAR</b></div>
+                <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between">
+                  <span class="limit-pill"><i class="fas fa-lock"></i> الحد اليومي: ${sub.limit} SAR</span>
+                  <span style="font-size:11px;color:var(--v200);font-weight:800">إدارة الصلاحيات <i class="fas fa-arrow-left"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-outline btn-block" onclick="openAddSubAccountModal()"><i class="fas fa-plus"></i> إضافة حساب فرعي جديد</button>
+    </div>
+  `;
+}
+
+function renderStoresList(stores) {
+  if (stores.length === 0) {
+    return `<div class="empty"><i class="fas fa-store-slash"></i><h3>لا توجد متاجر مطابقة</h3></div>`;
+  }
+  return stores.map(s => `
+    <div class="store-card" onclick="openStoreModal('${s.id}')">
+      <div class="store-head">
+        <div class="store-logo" style="background:rgba(123,91,199,.15)">${s.logo}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="store-name">${s.name}</div>
+            <div class="store-rating"><i class="fas fa-star"></i> ${s.rating} (${s.reviews})</div>
+          </div>
+          <p style="font-size:11.5px;color:var(--mut);margin:4px 0 8px;font-weight:700">${s.desc}</p>
+          <div class="store-meta">
+            <span><i class="fas fa-check-circle" style="color:var(--mint)"></i> موثق رسمياً</span>
+            <span>• دفع فوري عبر UMI PAY</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterStores(query) {
+  const filtered = db.stores.filter(s => s.name.includes(query) || s.desc.includes(query));
+  document.getElementById('storesContainer').innerHTML = renderStoresList(filtered);
+}
+
+function filterCat(cat, el) {
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const filtered = cat === 'all' ? db.stores : db.stores.filter(s => s.cat === cat);
+  document.getElementById('storesContainer').innerHTML = renderStoresList(filtered);
+}
+
+/* ═══════════════════════════════════════════
+   شاشة المحادثات
+   ═══════════════════════════════════════════ */
+function renderChats() {
+  const spa = document.getElementById('spa');
+  if (!spa) return;
+  
+  spa.innerHTML = `
+    <div class="vc ve">
+      <div class="vh" style="border-radius:18px;margin-bottom:16px">
+        <div class="vh-top">
+          <div>
+            <div class="vt">المحادثات والدعم</div>
+            <div class="vs">تواصل آمن وتحويلات فورية داخل الشات</div>
+          </div>
+          <div class="hb"><i class="fas fa-comments"></i></div>
+        </div>
+      </div>
+
+      <div class="txc">
+        ${db.chats.map(c => `
+          <div class="tx" onclick="openChatDetail('${c.id}')" style="cursor:pointer">
+            <div class="txi" style="background:var(--grad-violet);color:#fff;font-size:20px">${c.avatar}</div>
+            <div class="txb">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="txt">${c.name}</div>
+                <div style="font-size:10px;color:var(--mut);font-weight:700">${c.time}</div>
+              </div>
+              <div class="txm" style="margin-top:3px">${c.lastMsg}</div>
+            </div>
+            ${c.unread > 0 ? `<div style="background:var(--g2);color:#3D2B1F;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900">${c.unread}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function openChatDetail(chatId) {
+  const chat = db.chats.find(c => c.id == chatId);
+  openUmiModal({
+    icon: chat.avatar,
+    iconClass: 'gold',
+    title: chat.name,
+    subtitle: 'محادثة مشفرة وآمنة عبر أومني باي',
+    body: `
+      <div style="background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:16px;padding:14px;height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <div class="chat-bubble other">
+          ${chat.lastMsg}
+          <div class="time">${chat.time}</div>
+        </div>
+        <div class="chat-bubble mine">
+          أهلاً بك، تم استلام رسالتك وسأتابع الأمر معك فوراً.
+          <div class="time">الآن</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="chatMsgInput" class="umi-modal-input" placeholder="اكتب رسالتك هنا..." style="margin-bottom:0">
+        <button class="btn btn-gold" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    `,
+    actions: []
+  });
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatMsgInput');
+  if (!input || !input.value.trim()) return;
+  showToast('تم إرسال الرسالة بنجاح', 'success');
+  closeUmiModal();
+}
+
+/* ═══════════════════════════════════════════
+   شاشة عجلة الحظ (Wheel of Fortune)
+   ═══════════════════════════════════════════ */
+function renderWheel() {
+  const spa = document.getElementById('spa');
+  if (!spa) return;
+  
+  spa.innerHTML = `
+    <div class="vc ve" style="text-align:center">
+      <div class="vh" style="border-radius:18px;margin-bottom:16px;text-align:right">
+        <div class="vh-top">
+          <div>
+            <div class="vt">عجلة الحظ اليومية</div>
+            <div class="vs">اربح جوائز نقدية ورصيد مجاني كل يوم</div>
+          </div>
+          <div class="hb"><i class="fas fa-dice"></i></div>
+        </div>
+      </div>
+
+      <div class="pool-card">
+        <div style="font-size:11.5px;color:var(--mut);font-weight:800;margin-bottom:4px">إجمالي الجوائز المتاحة في الصندوق</div>
+        <div class="pool-value">${db.wheelPool.toLocaleString()} <small>SAR</small></div>
+        <div class="pool-umi">مكافآت حصرية لعمللاء UMI PAY</div>
+      </div>
+
+      <div class="wheel-wrap">
+        <div class="wheel-ptr">▼</div>
+        <div class="wheel" id="luckyWheel">
+          <!-- أقسام العجلة مبسطة بصرياً -->
+          <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(#E8C766 0deg 60deg, #7B5BC7 60deg 120deg, #6FB5A3 120deg 180deg, #D4A843 180deg 240deg, #C87B7B 240deg 300deg, #B8A4E8 300deg 360deg)"></div>
+          <div class="wheel-center"><i class="fas fa-gem"></i></div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold btn-block" style="margin-top:20px;padding:16px;font-size:16px" onclick="spinWheel()">
+        <i class="fas fa-play-circle"></i> أُدوِر العجلة الآن!
+      </button>
+    </div>
+  `;
+}
+
+let isSpinning = false;
+function spinWheel() {
+  if (isSpinning) return;
+  isSpinning = true;
+  
+  const wheel = document.getElementById('luckyWheel');
+  const randomDeg = 1440 + Math.floor(Math.random() * 360);
+  wheel.style.transform = `rotate(${randomDeg}deg)`;
+  
+  setTimeout(() => {
+    isSpinning = false;
+    db.wheelPool += 50;
+    openUmiModal({
+      icon: '🎉',
+      iconClass: 'gold',
+      title: 'مبروك لقد ربحت!',
+      subtitle: 'تمت إضافة جائزتك بنجاح إلى رصيد المحفظة',
+      body: `
+        <div class="pool-card" style="margin-bottom:0">
+          <div style="font-size:12px;color:var(--mut);font-weight:800">جائزة عجلة الحظ</div>
+          <div style="font-size:32px;font-weight:900;color:var(--g2);margin:6px 0">+50.00 SAR</div>
+          <div style="font-size:11px;color:var(--mint);font-weight:800">تم تحديث رصيد محفظتك الفوري</div>
+        </div>
+      `,
+      actions: [
+        {text: 'حسناً، شكراً', class: 'primary', onclick: 'closeUmiModal(); renderWheel();'}
+      ]
+    });
+  }, 4000);
+}
+
+/* ═══════════════════════════════════════════
+   شاشة الحساب الشخصي
+   ═══════════════════════════════════════════ */
+function renderProfile() {
+  const spa = document.getElementById('spa');
+  if (!spa || !db.user) return;
+  
+  spa.innerHTML = `
+    <div class="vc ve">
+      <div class="vh" style="border-radius:18px;margin-bottom:16px">
+        <div class="vh-top">
+          <div>
+            <div class="vt">الملف الشخصي</div>
+            <div class="vs">إدارة إعدادات الأمان والحساب</div>
+          </div>
+          <div class="hb"><i class="fas fa-user-shield"></i></div>
+        </div>
+      </div>
+
+      <div class="card" style="text-align:center;padding:24px">
+        <div style="width:72px;height:72px;background:var(--grad-gold);border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#3D2B1F;box-shadow:0 0 30px rgba(232,199,102,.4)">💎</div>
+        <h3 style="font-size:18px;font-weight:900;color:var(--txt)">${db.user.name}</h3>
+        <p style="font-size:12.5px;color:var(--v200);margin-top:4px;font-family:monospace">${db.user.phone}</p>
+        <div style="margin-top:12px">
+          <span class="rank-badge rank-supervisor"><i class="fas fa-shield-alt"></i> ${db.user.rankTitle}</span>
+        </div>
+      </div>
+
+      <div class="txc" style="margin-bottom:16px">
+        <div class="tx" onclick="showToast('الحساب موثق بالكامل عبر النفاذ الوطني', 'success')" style="cursor:pointer">
+          <div class="txi in"><i class="fas fa-id-card"></i></div>
+          <div class="txb"><div class="txt">توثيق الهوية (KYC)</div><div class="txm">موثق ومعتمد رسمياً</div></div>
+          <i class="fas fa-chevron-left" style="color:var(--mut)"></i>
+        </div>
+        <div class="tx" onclick="showToast('الأمان والقياس الحيوية مفعل', 'success')" style="cursor:pointer">
+          <div class="txi in"><i class="fas fa-fingerprint"></i></div>
+          <div class="txb"><div class="txt">بصمة الإصبع والوجه</div><div class="txm">مفعل لتسجيل الدخول السريع</div></div>
+          <i class="fas fa-chevron-left" style="color:var(--mut)"></i>
+        </div>
+        <div class="tx" onclick="showToast('تطبيق UMI PAY الإصدار 4.2.0', '')" style="cursor:pointer">
+          <div class="txi" style="background:rgba(123,91,199,.15);color:var(--v200)"><i class="fas fa-info-circle"></i></div>
+          <div class="txb"><div class="txt">إصدار التطبيق</div><div class="txm">UMI PAY v4.2 Pro</div></div>
+          <i class="fas fa-chevron-left" style="color:var(--mut)"></i>
+        </div>
+      </div>
+
+      <button class="btn btn-outline danger btn-block" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+    </div>
+  `;
+}
+
+function handleLogout() {
+  localStorage.removeItem('umi_user');
+  db.user = null;
+  showToast('تم تسجيل الخروج بنجاح');
+  renderAuth();
+}
+
+/* ═══════════════════════════════════════════
+   النظام الموحد للنوافذ المنبثقة (UMI MODAL ENGINE)
+   ═══════════════════════════════════════════ */
+function openUmiModal({ icon = 'fas fa-info-circle', iconClass = 'info', title = '', subtitle = '', body = '', actions = [] }) {
+  const overlay = document.getElementById('umiModalOverlay');
+  const iconEl = document.getElementById('umiModalIcon');
+  const titleEl = document.getElementById('umiModalTitle');
+  const subtitleEl = document.getElementById('umiModalSubtitle');
+  const bodyEl = document.getElementById('umiModalBody');
+  const actionsEl = document.getElementById('umiModalActions');
+
+  if (!overlay) return;
+
+  // تعيين الأيقونة (سواء كانت فئة FontAwesome أو رمز تعبيري)
+  if (icon.startsWith('fa-') || icon.includes('fa')) {
+    iconEl.innerHTML = `<i class="${icon}"></i>`;
+  } else {
+    iconEl.innerHTML = icon;
+  }
+  iconEl.className = `umi-modal-icon ${iconClass}`;
+
+  titleEl.innerText = title;
+  subtitleEl.innerText = subtitle;
+  bodyEl.innerHTML = body;
+
+  // بناء الأزرار
+  if (actions.length > 0) {
+    actionsEl.className = actions.length === 1 ? 'umi-modal-actions single' : 'umi-modal-actions';
+    actionsEl.innerHTML = actions.map(act => `
+      <button class="umi-modal-btn ${act.class || 'primary'}" onclick="${act.onclick}">${act.icon ? `<i class="${act.icon}"></i>` : ''} ${act.text}</button>
+    `).join('');
+    actionsEl.style.display = 'grid';
+  } else {
+    actionsEl.style.display = 'none';
+  }
+
+  overlay.classList.add('show');
+}
+
+function closeUmiModal(event) {
+  if (event && event.target !== document.getElementById('umiModalOverlay')) return;
+  closeUmiModalDirect();
+}
+
+function closeUmiModalDirect() {
+  const overlay = document.getElementById('umiModalOverlay');
+  if (!overlay) return;
+  overlay.classList.add('hiding');
+  setTimeout(() => {
+    overlay.classList.remove('show', 'hiding');
+  }, 200);
+}
+
+/* ═══════════════════════════════════════════
+   النوافذ التفاعلية المخصصة (تحويل، إيداع، QR)
+   ═══════════════════════════════════════════ */
+function openTransferModal() {
+  openUmiModal({
+    icon: 'fas fa-paper-plane',
+    iconClass: 'gold',
+    title: 'تحويل أموال فوري',
+    subtitle: 'أدخل بيانات المستلم والمبلغ المراد تحويله',
+    body: `
+      <div class="fld">
+        <label>رقم جوال أو حساب المستلم</label>
+        <input type="tel" id="transferTarget" class="umi-modal-input" placeholder="05xxxxxxxx أو UMI-xxxx">
+      </div>
+      <div class="fld">
+        <label>المبلغ (SAR)</label>
+        <input type="number" id="transferAmount" class="umi-modal-input" placeholder="0.00">
+      </div>
+    `,
+    actions: [
+      {text: 'إلغاء', class: 'outline', onclick: 'closeUmiModal()'},
+      {text: 'تأكيد التحويل', class: 'primary', icon: 'fas fa-check', onclick: 'executeTransfer()'}
+    ]
+  });
+}
+
+function executeTransfer() {
+  const target = document.getElementById('transferTarget').value.trim();
+  const amount = document.getElementById('transferAmount').value.trim();
+  if (!target || !amount || Number(amount) <= 0) {
+    showToast('يرجى إدخال بيانات صحيحة', 'error');
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    closeUmiModal();
+    showToast(`تم تحويل ${amount} SAR بنجاح!`, 'success');
+    db.transactions.unshift({
+      id: Date.now(),
+      type: 'out',
+      title: 'تحويل صادر',
+      subtitle: `إلى: ${target}`,
+      amount: `-${Number(amount).toFixed(2)}`,
+      currency: 'SAR',
+      date: 'الآن'
+    });
+    renderWallet();
+  }, 800);
+}
+
+function openDepositModal() {
+  openUmiModal({
+    icon: 'fas fa-plus-circle',
+    iconClass: 'success',
+    title: 'إيداع رصيد فوري',
+    subtitle: 'اختر طريقة الإيداع المناسبة لمحفظتك',
+    body: `
+      <div class="fld">
+        <label>مبلغ الإيداع (SAR)</label>
+        <input type="number" id="depositAmount" class="umi-modal-input" placeholder="0.00" value="500">
+      </div>
+      <div class="fld">
+        <label>طريقة الدفع</label>
+        <select class="umi-modal-input" id="depositMethod">
+          <option value="mada">بطاقة مدى البنكية (Mada)</option>
+          <option value="apple">Apple Pay / STC Pay</option>
+          <option value="bank">تحويل بنكي مباشر</option>
+        </select>
+      </div>
+    `,
+    actions: [
+      {text: 'إلغاء', class: 'outline', onclick: 'closeUmiModal()'},
+      {text: 'إتمام الإيداع', class: 'success', icon: 'fas fa-shield-alt', onclick: 'executeDeposit()'}
+    ]
+  });
+}
+
+function executeDeposit() {
+  const amount = document.getElementById('depositAmount').value.trim();
+  if (!amount || Number(amount) <= 0) {
+    showToast('يرجى إدخال مبلغ صحيح للإيداع', 'error');
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    closeUmiModal();
+    let currentBal = parseFloat(db.user.balance);
+    currentBal += parseFloat(amount);
+    db.user.balance = currentBal.toFixed(2);
+    localStorage.setItem('umi_user', JSON.stringify(db.user));
+    
+    db.transactions.unshift({
+      id: Date.now(),
+      type: 'in',
+      title: 'إيداع رصيد',
+      subtitle: 'بطاقة بنكية مدى',
+      amount: `+${Number(amount).toFixed(2)}`,
+      currency: 'SAR',
+      date: 'الآن'
+    });
+    
+    showToast(`تم إيداع ${amount} SAR بنجاح!`, 'success');
+    renderWallet();
+  }, 800);
+}
+
+function openQrModal() {
+  openUmiModal({
+    icon: 'fas fa-qrcode',
+    iconClass: 'gold',
+    title: 'رمز الاستجابة السريع (QR)',
+    subtitle: 'اعرض هذا الكود للمستلم لتحويل الأموال فوراً',
+    body: `
+      <div style="text-align:center;padding:10px 0">
+        <div style="background:#E8C766;border-radius:18px;padding:14px;display:inline-block;box-shadow:0 0 30px rgba(232,199,102,.4)">
+          <div id="qrcodeCanvas" style="width:160px;height:160px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px">
+            <i class="fas fa-qrcode" style="font-size:100px;color:#0a0416"></i>
+          </div>
+        </div>
+        <div style="font-size:15px;font-weight:900;color:var(--g2);margin-top:12px">${db.user.name}</div>
+        <div style="font-size:12px;color:var(--v200);font-family:monospace;margin-top:4px">${db.user.accountNo}</div>
+      </div>
+    `,
+    actions: [
+      {text: 'إغلاق', class: 'outline', onclick: 'closeUmiModal()'}
+    ]
+  });
+}
+
+function openStoreModal(storeId) {
+  const store = db.stores.find(s => s.id == storeId);
+  openUmiModal({
+    icon: store.logo,
+    iconClass: 'gold',
+    title: store.name,
+    subtitle: store.desc,
+    body: `
+      <div class="umi-modal-details">
+        <div class="umi-modal-detail-row"><span class="k"><i class="fas fa-star" style="color:var(--g2)"></i> التقييم</span><span class="v gold">${store.rating} / 5.0 (${store.reviews} تقييم)</span></div>
+        <div class="umi-modal-detail-row"><span class="k"><i class="fas fa-shield-alt" style="color:var(--mint)"></i> الأمان</span><span class="v mint">معتمد ومحمي</span></div>
+        <div class="umi-modal-detail-row"><span class="k"><i class="fas fa-bolt" style="color:var(--sky)"></i> الدفع</span><span class="v violet">فوري عبر UMI PAY</span></div>
+      </div>
+      <div class="fld" style="margin-top:14px">
+        <label>قيمة الشراء أو الفاتورة (SAR)</label>
+        <input type="number" id="storePayAmount" class="umi-modal-input" placeholder="0.00" value="100">
+      </div>
+    `,
+    actions: [
+      {text: 'إلغاء', class: 'outline', onclick: 'closeUmiModal()'},
+      {text: 'دفع الفاتورة الآن', class: 'primary', icon: 'fas fa-check', onclick: `executeStorePayment('${store.name}')`}
+    ]
+  });
+}
+
+function executeStorePayment(storeName) {
+  const amount = document.getElementById('storePayAmount').value.trim();
+  if (!amount || Number(amount) <= 0) {
+    showToast('يرجى إدخال مبلغ صحيح', 'error');
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    closeUmiModal();
+    showToast(`تم دفع ${amount} SAR لـ ${storeName} بنجاح!`, 'success');
+    db.transactions.unshift({
+      id: Date.now(),
+      type: 'out',
+      title: 'مدفوعات مشتريات',
+      subtitle: storeName,
+      amount: `-${Number(amount).toFixed(2)}`,
+      currency: 'SAR',
+      date: 'الآن'
+    });
+    renderWallet();
+  }, 800);
+}
+
+function openSubAccountModal(subId) {
+  const sub = db.subAccounts.find(s => s.id == subId);
+  openUmiModal({
+    icon: sub.avatar,
+    iconClass: sub.type === 'child' ? 'info' : 'success',
+    title: sub.name,
+    subtitle: `إدارة الصلاحيات والحدود اليومية`,
+    body: `
+      <div class="umi-modal-details">
+        <div class="umi-modal-detail-row"><span class="k"><i class="fas fa-wallet"></i> الرصيد الحالي</span><span class="v gold">${sub.balance} SAR</span></div>
+        <div class="umi-modal-detail-row"><span class="k"><i class="fas fa-lock"></i> الحد اليومي</span><span class="v violet">${sub.limit} SAR</span></div>
+      </div>
+      <div class="fld" style="margin-top:14px">
+        <label>تعديل الحد اليومي (SAR)</label>
+        <input type="number" id="newLimitVal" class="umi-modal-input" value="${sub.limit}">
+      </div>
+    `,
+    actions: [
+      {text: 'إغلاق', class: 'outline', onclick: 'closeUmiModal()'},
+      {text: 'حفظ التعديلات', class: 'primary', onclick: `updateSubLimit('${sub.id}')`}
+    ]
+  });
+}
+
+function updateSubLimit(subId) {
+  const newLimit = document.getElementById('newLimitVal').value.trim();
+  if (!newLimit) return;
+  const sub = db.subAccounts.find(s => s.id == subId);
+  if (sub) sub.limit = newLimit;
+  closeUmiModal();
+  showToast('تم تحديث الحد اليومي بنجاح', 'success');
+  renderServices();
+}
+
+function openAddSubAccountModal() {
+  openUmiModal({
+    icon: 'fas fa-user-plus',
+    iconClass: 'gold',
+    title: 'إضافة حساب فرعي جديد',
+    subtitle: 'إنشاء حساب مخصص للعائلة أو العمالة المنزلية مع تحديد الصلاحيات',
+    body: `
+      <div class="fld">
+        <label>اسم الحساب / الشخص</label>
+        <input type="text" id="newSubName" class="umi-modal-input" placeholder="مثال: حساب الابن محمد">
+      </div>
+      <div class="fld">
+        <label>نوع الحساب</label>
+        <select class="umi-modal-input" id="newSubType">
+          <option value="child">حساب عائلة / طفل (مقيّد)</option>
+          <option value="worker">حساب عمالة منزلية / مساعد</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>الحد الأقصى للإنفاق اليومي (SAR)</label>
+        <input type="number" id="newSubLimit" class="umi-modal-input" placeholder="500" value="300">
+      </div>
+    `,
+    actions: [
+      {text: 'إلغاء', class: 'outline', onclick: 'closeUmiModal()'},
+      {text: 'إنشاء الحساب', class: 'primary', icon: 'fas fa-check', onclick: 'executeAddSubAccount()'}
+    ]
+  });
+}
+
+function executeAddSubAccount() {
+  const name = document.getElementById('newSubName').value.trim();
+  const type = document.getElementById('newSubType').value;
+  const limit = document.getElementById('newSubLimit').value.trim();
+  
+  if (!name || !limit) {
+    showToast('يرجى إدخال اسم الحساب والحد اليومي', 'error');
+    return;
+  }
+  
+  db.subAccounts.push({
+    id: Date.now(),
+    name: name,
+    type: type,
+    balance: "0.00",
+    limit: limit,
+    avatar: type === 'child' ? '👶' : '🛠️',
+    status: 'active'
+  });
+  
+  closeUmiModal();
+  showToast('تم إضافة الحساب الفرعي بنجاح!', 'success');
+  renderServices();
+}
+</script>
