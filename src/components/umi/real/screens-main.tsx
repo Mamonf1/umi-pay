@@ -70,7 +70,7 @@ export function LoginScreen({ onLogin, onOpenAbout }: { onLogin: (me: Me) => voi
   const pinErr = mode === "register" && pin.length === 4 ? validatePin(pin) : null;
   const canSubmit =
     mode === "login"
-      ? phone.trim().length >= 6 && pass.length >= 8
+      ? phone.trim().length >= 6 && pass.length >= 1
       : name.trim().length >= 2 && phone.trim().length >= 6 && pass.length >= 8 && pin.length === 4;
 
   return (

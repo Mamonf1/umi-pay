@@ -218,7 +218,7 @@ export function AboutScreen({ onClose }: { onClose: () => void }) {
         <Section title="تواصل مع الإدارة" icon={<LifeBuoy className="w-4 h-4 text-umi-gold" />}>
           <p>
             لأي استفسار أو شكوى تواصل مع أدمن المحفظة مباشرة عبر المحادثات داخل التطبيق،
-            أو على رقم الإدارة <b className="text-umi-cream" dir="ltr">0969748865</b>.
+            أو على رقم الإدارة <b className="text-umi-cream" dir="ltr">963 969 748 865</b>.
             نرحب بملاحظاتكم لتطوير المحفظة، ونرد عادة خلال ساعات النهار.
           </p>
         </Section>
