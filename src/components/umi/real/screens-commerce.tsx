@@ -3,7 +3,7 @@
 // UMI PAY — المتاجر وبوابة الدفع (بالليرة السورية + رمز دفع 4 أرقام)
 import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { StatusBar } from "@/components/umi/shell";
 import { ScreenHeader, AmountPad, PinPad, ProcessingView, SypAmount } from "@/components/umi/real/pads";
 import { api } from "@/lib/umi-client";
 import { fmtSyp, usdLine, SYP_UNIT } from "@/lib/currency";
@@ -31,7 +31,7 @@ export function StoresScreen({ me, onExit, onPaid }: { me: Me; onExit: () => voi
         method: "POST",
         body: JSON.stringify({ userId: me.id, merchantId: picked?.id, amount: Number(amount), pin: code }),
       });
-      setSuccess(r);
+      setSuccess({ ref: r.reference, amount: r.amount, merchant: r.merchant });
     } catch (e) {
       setErr((e as Error).message);
       setStage("pin");
@@ -40,7 +40,7 @@ export function StoresScreen({ me, onExit, onPaid }: { me: Me; onExit: () => voi
 
   if (success)
     return (
-      <div className="h-full flex flex-col items-center justify-center px-8 text-center bg-umi-bg">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-8 text-center bg-umi-bg">
         <div className="w-20 h-20 rounded-full grid place-items-center mb-5 umi-glow" style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}>
           <ShieldCheck className="w-10 h-10 text-[#0a0416]" strokeWidth={2.6} />
         </div>
@@ -61,7 +61,7 @@ export function StoresScreen({ me, onExit, onPaid }: { me: Me; onExit: () => voi
   if (stage === "processing") return <ProcessingView label="جارٍ تنفيذ الدفع عبر بوابة أومي" />;
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <ScreenHeader
         title="المتاجر"
         subtitle={stage === "pick" ? "بوابة دفع أومي — بالليرة السورية" : stage === "amount" ? `الدفع لـ ${picked?.name}` : "أكّد برمز الدفع"}

@@ -6,7 +6,7 @@ import {
   ArrowDownLeft, HandCoins, ShieldCheck, Clock, CheckCheck, XCircle,
   Wallet, Landmark, BadgeCheck,
 } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { StatusBar } from "@/components/umi/shell";
 import {
   ScreenHeader, AmountPad, PinPad, SuccessView, ProcessingView, SypAmount,
 } from "@/components/umi/real/pads";
@@ -65,7 +65,7 @@ export function SendScreen({ me, onDone, onExit }: { me: Me; onDone: () => void;
   if (processing) return <ProcessingView label="جارٍ تنفيذ التحويل" />;
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <ScreenHeader
         title="تحويل أموال"
         subtitle={stage === "pick" ? "اختر المستلم" : stage === "amount" ? `إلى: ${to?.name}` : "أكّد برمز الدفع"}
@@ -294,7 +294,7 @@ export function LoansScreen({ me, onChanged, onExit }: { me: Me; onChanged: () =
     );
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <ScreenHeader title="القروض" subtitle="بالليرة السورية — توافقها الإدارة وتُشحن فوراً" onBack={stage === "request" ? () => setStage("view") : onExit} />
       <div className="flex-1 overflow-y-auto umi-scroll pb-24">
         {stage === "view" && (

@@ -1,5 +1,6 @@
 // UMI PAY — أدوات مشتركة للخادم (العملة الأساسية: الليرة السورية)
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 export const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -42,7 +43,7 @@ export async function moveMoney(opts: {
   note?: string;
 }) {
   const amount = rSyp(opts.amount);
-  const ops: Parameters<typeof db.$transaction>[0] = [];
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
   if (opts.fromUserId)
     ops.push(
       db.wallet.update({

@@ -1,5 +1,8 @@
 "use client";
 
+// UMI PAY — غلاف التطبيق بملء الشاشة (موبايل فقط)
+// لا يوجد إطار هاتف ولا نسخة سطح مكتب: العمود يتمدد بعرض الشاشة الكامل على الموبايل
+// وعلى الشاشات الكبيرة يبقى عموداً مركزياً بعرض هاتف (نفس النسخة، لا نسخ ثانية)
 import { ReactNode } from "react";
 import { BatteryFull, House, QrCode, MessageCircle, HandCoins, ArrowUpLeft } from "lucide-react";
 
@@ -13,10 +16,13 @@ export const SCREEN_LABELS: Record<ScreenKey, string> = {
   chat: "المحادثات",
 };
 
-/** iOS-style status bar rendered at top of every screen */
+/** شريط علوي رفيع يتكيف مع حواف الشاشة (safe-area) */
 export function StatusBar() {
   return (
-    <div className="flex items-center justify-between px-5 pt-3 pb-1 text-[11px] font-tajawal font-bold text-umi-cream/90 select-none">
+    <div
+      className="flex items-center justify-between px-5 pt-2.5 pb-1 text-[11px] font-tajawal font-bold text-umi-cream/90 select-none"
+      style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}
+    >
       <span>9:41</span>
       <span className="flex items-center gap-1" aria-hidden="true">
         <span className="flex items-end gap-[2px]">
@@ -30,7 +36,7 @@ export function StatusBar() {
   );
 }
 
-/** Bottom tab bar — the app's primary navigation (interactive in showcase) */
+/** شريط التبويب السفلي — بعرض التطبيق الكامل مع مراعاة حواف الجهاز */
 export function TabBar({
   active,
   onNavigate,
@@ -49,8 +55,9 @@ export function TabBar({
     <nav
       aria-label="التنقل الرئيسي للتطبيق"
       className="absolute bottom-0 inset-x-0 z-30 border-t border-white/10 bg-[#0d0719]/95 backdrop-blur-md"
+      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <ul className="grid grid-cols-5 px-2 pt-1.5 pb-4">
+      <ul className="grid grid-cols-5 px-2 pt-1.5">
         {items.map((it) => {
           const isActive = it.key === active;
           return (
@@ -71,26 +78,5 @@ export function TabBar({
         })}
       </ul>
     </nav>
-  );
-}
-
-/** Physical phone frame with notch — content scrolls inside */
-export function PhoneFrame({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative w-[300px] sm:w-[326px] shrink-0 mx-auto" dir="rtl">
-      {/* hardware */}
-      <div className="absolute -left-[13px] top-24 w-[3px] h-14 rounded-full bg-[#2b2338]" aria-hidden="true" />
-      <div className="absolute -right-[13px] top-28 w-[3px] h-20 rounded-full bg-[#2b2338]" aria-hidden="true" />
-      <div className="relative rounded-[2.9rem] p-[9px] bg-gradient-to-b from-[#2e2542] via-[#171021] to-[#241a38] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
-        <div className="relative rounded-[2.35rem] overflow-hidden bg-umi-bg h-[632px]">
-          {/* dynamic island */}
-          <div
-            className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-[22px] bg-black rounded-full z-40 border border-white/5"
-            aria-hidden="true"
-          />
-          {children}
-        </div>
-      </div>
-    </div>
   );
 }

@@ -5,9 +5,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   LogOut, Users, Store, ArrowLeftRight, Coins, RefreshCw, Check, X,
-  HandCoins, Landmark, Globe, Save, Clock, Wallet,
+  HandCoins, Landmark, Globe, Save, Clock, Wallet, Info,
 } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { StatusBar } from "@/components/umi/shell";
 import { CoinIcon } from "@/components/umi/real/screens-main";
 import { api } from "@/lib/umi-client";
 import { useRates } from "@/lib/rates";
@@ -30,7 +30,7 @@ interface AdminData {
 
 type Tab = "overview" | "pricing" | "points" | "loans";
 
-export function AdminScreen({ me, onLogout }: { me: Me; onLogout: () => void }) {
+export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: () => void; onOpenAbout?: () => void }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<AdminData | null>(null);
 
@@ -49,7 +49,7 @@ export function AdminScreen({ me, onLogout }: { me: Me; onLogout: () => void }) 
   ];
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <StatusBar />
       <header className="flex items-center gap-3 px-5 pt-2 pb-3">
         <span className="w-11 h-11 rounded-2xl bg-white/5 border border-umi-gold/30 grid place-items-center text-xl">{me.avatar}</span>
@@ -57,6 +57,16 @@ export function AdminScreen({ me, onLogout }: { me: Me; onLogout: () => void }) 
           <p className="text-[10px] font-tajawal text-umi-muted">لوحة أدمن المحفظة</p>
           <p className="font-cairo font-bold text-[15px] text-umi-cream truncate">{me.name}</p>
         </div>
+        {onOpenAbout && (
+          <button
+            type="button"
+            onClick={onOpenAbout}
+            aria-label="من نحن"
+            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 grid place-items-center text-umi-gold"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={onLogout}

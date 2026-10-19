@@ -3,7 +3,7 @@
 // UMI PAY — مكوّنات مشتركة: لوحة أرقام (ل.س + مكافئ $)، لوحة رمز دفع، شاشة نجاح، رأس شاشة
 import { useEffect, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { StatusBar } from "@/components/umi/shell";
 import { useRates } from "@/lib/rates";
 import { fmtSyp, usdLine, SYP_UNIT } from "@/lib/currency";
 
@@ -175,7 +175,7 @@ export function SuccessView({
     return () => clearTimeout(t);
   }, [onDone]);
   return (
-    <div className="h-full flex flex-col items-center justify-center px-8 text-center bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-8 text-center bg-umi-bg">
       <div
         className="w-20 h-20 rounded-full grid place-items-center mb-5 umi-glow"
         style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
@@ -197,7 +197,7 @@ export function SuccessView({
 /** معالجة جارية (بوابة الدفع) */
 export function ProcessingView({ label = "جارٍ تنفيذ العملية" }: { label?: string }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-umi-bg">
       <div className="w-14 h-14 rounded-full border-[3px] border-umi-gold/25 border-t-umi-gold animate-spin" />
       <p className="mt-5 text-sm font-tajawal text-umi-cream">{label}…</p>
       <p className="mt-1 text-[10px] font-tajawal text-umi-muted">تشفير وإرسال آمن عبر بوابة أومي</p>

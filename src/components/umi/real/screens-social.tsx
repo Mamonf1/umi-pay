@@ -3,7 +3,7 @@
 // UMI PAY — المحادثات + تحويل مالي مضمّن (بالليرة السورية + رمز دفع 4 أرقام)
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send as SendIcon, Wallet } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { StatusBar } from "@/components/umi/shell";
 import { ScreenHeader, PinPad, SypAmount } from "@/components/umi/real/pads";
 import { api } from "@/lib/umi-client";
 import { useRates } from "@/lib/rates";
@@ -21,7 +21,7 @@ export function ChatScreen({ me, onExit, onChanged }: { me: Me; onExit: () => vo
   }, [me.id]);
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <ScreenHeader title="المحادثات" subtitle="أرسل رسالة أو حوّل مالاً داخل المحادثة" onBack={openId ? undefined : onExit} />
       <div className="flex-1 overflow-y-auto umi-scroll pb-6">
         {threads === null && <p className="text-center text-umi-muted text-[11px] font-tajawal pt-10 animate-pulse">جارٍ التحميل…</p>}

@@ -5,9 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bell, ChevronLeft, Eye, EyeOff, LogOut, QrCode, ShieldCheck,
   Smartphone, ArrowDownLeft, ArrowUpRight, Store, HandCoins, Sparkles,
-  KeyRound, Lock, BadgeCheck,
+  KeyRound, Lock, BadgeCheck, Info,
 } from "lucide-react";
-import { StatusBar } from "@/components/umi/phone-frame";
+import { AboutFooterLink } from "@/components/umi/real/screens-about";
+import { StatusBar } from "@/components/umi/shell";
 import { ScreenHeader, TxRow, SypAmount } from "@/components/umi/real/pads";
 import { UmiLogo } from "@/components/umi/logo";
 import { api } from "@/lib/umi-client";
@@ -21,7 +22,7 @@ import {
 } from "@/lib/umi-types";
 
 /* ============ شاشة الدخول / إنشاء الحساب ============ */
-export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
+export function LoginScreen({ onLogin, onOpenAbout }: { onLogin: (me: Me) => void; onOpenAbout?: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
@@ -73,11 +74,11 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
       : name.trim().length >= 2 && phone.trim().length >= 6 && pass.length >= 8 && pin.length === 4;
 
   return (
-    <div className="h-full flex flex-col bg-umi-bg px-6 pt-6 pb-6 overflow-y-auto no-scrollbar">
+    <div className="min-h-[100dvh] flex flex-col justify-center bg-umi-bg px-6 pt-6 pb-8 overflow-y-auto no-scrollbar">
       <StatusBar />
       <div className="text-center mt-3 mb-5">
         <div className="flex justify-center mb-3">
-          <UmiLogo size={110} />
+          <UmiLogo size={116} />
         </div>
         <h1 className="font-cairo font-black text-[36px] leading-none gold-text tracking-tight">UMI PAY</h1>
         <p className="text-[11.5px] font-tajawal text-umi-muted mt-2">
@@ -184,6 +185,7 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
 
       <button
         type="button"
+        data-testid="login-submit"
         disabled={busy || !canSubmit}
         onClick={mode === "login" ? doLogin : doRegister}
         className="w-full h-11 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
@@ -212,6 +214,7 @@ export function LoginScreen({ onLogin }: { onLogin: (me: Me) => void }) {
         </div>
       </div>
       <RateChip />
+      {onOpenAbout && <AboutFooterLink onClick={onOpenAbout} />}
     </div>
   );
 }
@@ -262,6 +265,7 @@ export function HomeScreen({
   onOpenHistory,
   onOpenProfile,
   onOpenTamayuz,
+  onOpenAbout,
 }: {
   data: HomeData;
   hidden: boolean;
@@ -270,6 +274,7 @@ export function HomeScreen({
   onOpenHistory: () => void;
   onOpenProfile: () => void;
   onOpenTamayuz: () => void;
+  onOpenAbout?: () => void;
 }) {
   const { me, weekIn, weekOut, txs } = data;
   const { rates } = useRates();
@@ -281,7 +286,7 @@ export function HomeScreen({
     { key: "stores" as const, label: "المتاجر", icon: <Store className="w-5 h-5" strokeWidth={1.9} /> },
   ];
   return (
-    <div className="h-full flex flex-col bg-umi-bg">
+    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
       <StatusBar />
       <header className="flex items-center gap-3 px-5 pt-2 pb-3">
         <button
@@ -413,6 +418,24 @@ export function HomeScreen({
           </span>
           <ChevronLeft className="w-4 h-4 text-umi-gold shrink-0" />
         </button>
+
+        {/* ==== من نحن ==== */}
+        {onOpenAbout && (
+          <button
+            type="button"
+            onClick={onOpenAbout}
+            className="mx-4 mt-2.5 w-[calc(100%-32px)] rounded-2xl px-4 py-3 umi-card flex items-center gap-3 text-right active:bg-white/5"
+          >
+            <span className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 grid place-items-center shrink-0">
+              <Info className="w-4 h-4 text-umi-gold" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-cairo font-bold text-[12.5px] text-umi-cream">من نحن</span>
+              <span className="block text-[9.5px] font-tajawal text-umi-muted">كل المعلومات والحدود والشروط في مكان واحد</span>
+            </span>
+            <ChevronLeft className="w-4 h-4 text-umi-muted shrink-0" />
+          </button>
+        )}
 
         {/* ==== آخر العمليات ==== */}
         <section className="mt-4" aria-label="آخر العمليات">
@@ -674,7 +697,7 @@ export function TamayuzSheet({ me, onClose }: { me: Me; onClose: () => void }) {
 }
 
 /* ============ الملف الشخصي — المحفظة + الأمان + البطاقات ============ */
-export function ProfileScreen({ me, onLogout, onClose }: { me: Me; onLogout: () => void; onClose: () => void }) {
+export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; onLogout: () => void; onClose: () => void; onOpenAbout?: () => void }) {
   const { rates } = useRates();
   const roleLabel =
     me.role === "merchant" ? "حساب تاجر" : me.role === "admin" ? "أدمن المحفظة" : "حساب شخصي";
@@ -735,6 +758,16 @@ export function ProfileScreen({ me, onLogout, onClose }: { me: Me; onLogout: () 
             عملتك الأساسية الليرة السورية — مكافئ الدولار يُحسب من سعر الصرف الذي تديره الإدارة، ونقاط أومي محفظة مكافآت تُمنح من الإدارة فقط.
           </p>
         </div>
+
+        {onOpenAbout && (
+          <button
+            type="button"
+            onClick={onOpenAbout}
+            className="w-full h-11 rounded-xl umi-card flex items-center justify-center gap-2 text-umi-cream font-tajawal font-bold text-[13px] active:bg-white/5 mb-2.5"
+          >
+            <Info className="w-4 h-4 text-umi-gold" /> من نحن — المعلومات والشروط
+          </button>
+        )}
 
         <button
           type="button"
