@@ -11,6 +11,7 @@ import {
 import { SendScreen, TopUpSheet, LoansScreen } from "@/components/umi/real/screens-money";
 import { StoresScreen } from "@/components/umi/real/screens-commerce";
 import { ChatScreen } from "@/components/umi/real/screens-social";
+import { QrScannerSheet } from "@/components/umi/real/screens-scan";
 import { AboutScreen } from "@/components/umi/real/screens-about";
 import { api } from "@/lib/umi-client";
 import { RatesProvider } from "@/lib/rates";
@@ -18,7 +19,7 @@ import { AdminScreen } from "@/components/umi/real/screens-admin";
 import { UmiLogo } from "@/components/umi/logo";
 import type { HomeData, Me } from "@/lib/umi-types";
 
-type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | "about" | null;
+type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | "about" | "scan" | null;
 
 export function UmiApp() {
   return (
@@ -142,8 +143,11 @@ function UmiAppInner() {
           <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} onOpenAbout={() => setOverlay("about")} />
         )}
         {overlay === "qr" && meData && <QrSheet me={meData} onClose={() => setOverlay(null)} />}
+        {overlay === "scan" && meData && (
+          <QrScannerSheet me={meData} onClose={() => setOverlay(null)} onDone={() => { setOverlay(null); refresh(); }} />
+        )}
         {overlay === "tamayuz" && meData && <TamayuzSheet me={meData} onClose={() => { setOverlay(null); refresh(); }} />}
-        {!overlay && <TabBar active={tab} onNavigate={setTab} />}
+        {!overlay && <TabBar active={tab} onNavigate={setTab} onScan={() => setOverlay("scan")} />}
       </div>
     );
   }

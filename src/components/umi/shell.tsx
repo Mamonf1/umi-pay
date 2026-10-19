@@ -4,7 +4,7 @@
 // لا يوجد إطار هاتف ولا نسخة سطح مكتب: العمود يتمدد بعرض الشاشة الكامل على الموبايل
 // وعلى الشاشات الكبيرة يبقى عموداً مركزياً بعرض هاتف (نفس النسخة، لا نسخ ثانية)
 import { ReactNode } from "react";
-import { BatteryFull, House, QrCode, MessageCircle, HandCoins, ArrowUpLeft } from "lucide-react";
+import { BatteryFull, House, QrCode, MessageCircle, HandCoins, Store } from "lucide-react";
 
 export type ScreenKey = "home" | "send" | "stores" | "loans" | "chat";
 
@@ -36,46 +36,68 @@ export function StatusBar() {
   );
 }
 
-/** شريط التبويب السفلي — بعرض التطبيق الكامل مع مراعاة حواف الجهاز */
+/** شريط التبويب السفلي — زر مسح QR بارز في المنتصف (يفتح الكاميرا للقراءة) */
 export function TabBar({
   active,
   onNavigate,
+  onScan,
 }: {
   active: ScreenKey;
   onNavigate?: (k: ScreenKey) => void;
+  onScan?: () => void;
 }) {
   const items: { key: ScreenKey; label: string; icon: ReactNode }[] = [
     { key: "home", label: "الرئيسية", icon: <House className="w-5 h-5" strokeWidth={1.8} /> },
-    { key: "stores", label: "المتاجر", icon: <QrCode className="w-5 h-5" strokeWidth={1.8} /> },
-    { key: "send", label: "إرسال", icon: <ArrowUpLeft className="w-5 h-5" strokeWidth={1.8} /> },
+    { key: "stores", label: "المتاجر", icon: <Store className="w-5 h-5" strokeWidth={1.8} /> },
+  ];
+  const rightItems: { key: ScreenKey; label: string; icon: ReactNode }[] = [
     { key: "loans", label: "القروض", icon: <HandCoins className="w-5 h-5" strokeWidth={1.8} /> },
     { key: "chat", label: "المحادثات", icon: <MessageCircle className="w-5 h-5" strokeWidth={1.8} /> },
   ];
+  const tabBtn = (it: { key: ScreenKey; label: string; icon: ReactNode }) => {
+    const isActive = it.key === active;
+    return (
+      <button
+        type="button"
+        onClick={() => onNavigate?.(it.key)}
+        aria-current={isActive ? "page" : undefined}
+        className={`w-full flex flex-col items-center gap-0.5 py-1 rounded-xl transition-colors ${
+          isActive ? "text-umi-gold" : "text-umi-muted hover:text-umi-cream"
+        }`}
+      >
+        {it.icon}
+        <span className="text-[9px] font-tajawal font-medium">{it.label}</span>
+      </button>
+    );
+  };
   return (
     <nav
       aria-label="التنقل الرئيسي للتطبيق"
       className="absolute bottom-0 inset-x-0 z-30 border-t border-white/10 bg-[#0d0719]/95 backdrop-blur-md"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <ul className="grid grid-cols-5 px-2 pt-1.5">
-        {items.map((it) => {
-          const isActive = it.key === active;
-          return (
-            <li key={it.key}>
-              <button
-                type="button"
-                onClick={() => onNavigate?.(it.key)}
-                aria-current={isActive ? "page" : undefined}
-                className={`w-full flex flex-col items-center gap-0.5 py-1 rounded-xl transition-colors ${
-                  isActive ? "text-umi-gold" : "text-umi-muted hover:text-umi-cream"
-                }`}
-              >
-                {it.icon}
-                <span className="text-[9px] font-tajawal font-medium">{it.label}</span>
-              </button>
-            </li>
-          );
-        })}
+      <ul className="grid grid-cols-5 px-2 pt-1.5 items-end">
+        {items.map((it) => <li key={it.key}>{tabBtn(it)}</li>)}
+
+        {/* زر المسح — في المنتصف تماماً */}
+        <li className="flex flex-col items-center">
+          <button
+            type="button"
+            data-testid="tab-scan"
+            onClick={onScan}
+            aria-label="مسح رمز QR للتحويل"
+            className="-mt-9 w-14 h-14 rounded-2xl grid place-items-center active:scale-95 transition-transform"
+            style={{
+              background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)",
+              boxShadow: "0 12px 28px -8px rgba(232,199,102,0.55), inset 0 1px 0 rgba(255,255,255,0.4)",
+            }}
+          >
+            <QrCode className="w-7 h-7 text-[#0a0416]" strokeWidth={2.2} />
+          </button>
+          <span className="text-[9px] font-tajawal font-bold text-umi-gold mt-1">مسح رمز</span>
+        </li>
+
+        {rightItems.map((it) => <li key={it.key}>{tabBtn(it)}</li>)}
       </ul>
     </nav>
   );

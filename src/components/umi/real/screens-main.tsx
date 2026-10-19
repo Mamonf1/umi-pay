@@ -1,7 +1,7 @@
 "use client";
 
 // UMI PAY — الشاشات الرئيسية: دخول/تسجيل / محفظة (تصميم جديد) / سجل / ملف شخصي / QR
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Bell, ChevronLeft, Eye, EyeOff, LogOut, QrCode, ShieldCheck,
   Smartphone, ArrowDownLeft, ArrowUpRight, Store, HandCoins, Sparkles,
@@ -12,6 +12,7 @@ import { StatusBar } from "@/components/umi/shell";
 import { ScreenHeader, TxRow, SypAmount } from "@/components/umi/real/pads";
 import { UmiLogo } from "@/components/umi/logo";
 import { api } from "@/lib/umi-client";
+import QRCode from "qrcode";
 import { useRates } from "@/lib/rates";
 import {
   fmtSyp, usdLine, fmtUsd, sypToUsd, pointsToSyp, fmtPoints,
@@ -526,48 +527,39 @@ export function HistoryScreen({ meId, onBack }: { meId: string; onBack: () => vo
   );
 }
 
-/* ============ بطاقة QR ============ */
-function qrCells(seedStr: string): boolean[][] {
-  const n = 21;
-  let seed = [...seedStr].reduce((a, c) => a + c.charCodeAt(0) * 31, 7);
-  const rnd = () => {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
-  const g: boolean[][] = Array.from({ length: n }, () => Array.from({ length: n }, () => rnd() > 0.52));
-  const finder = (r0: number, c0: number) => {
-    for (let r = 0; r < 7; r++)
-      for (let c = 0; c < 7; c++) {
-        const edge = r === 0 || r === 6 || c === 0 || c === 6;
-        const core = r >= 2 && r <= 4 && c <= 4 && c >= 2;
-        if (r0 + r < n && c0 + c < n) g[r0 + r][c0 + c] = edge || core;
-      }
-  };
-  finder(0, 0);
-  finder(0, n - 7);
-  finder(n - 7, 0);
-  return g;
-}
+/* ============ بطاقة QR — رمز حقيقي عبر مكتبة qrcode ============ */
 
 export function QrSheet({ me, onClose }: { me: Me; onClose: () => void }) {
-  const grid = useMemo(() => qrCells(me.id + me.phone), [me.id, me.phone]);
+  // رمز QR حقيقي قابل للمسح — يشفّر umipay:<id> ويقرؤه زر «مسح رمز» في الشريط السفلي
+  const [svg, setSvg] = useState("");
+  useEffect(() => {
+    QRCode.toString(`umipay:${me.id}`, {
+      type: "svg",
+      margin: 0,
+      width: 220,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0a0416", light: "#f5dfa0" },
+    })
+      .then(setSvg)
+      .catch(() => setSvg(""));
+  }, [me.id]);
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
-      <ScreenHeader title="الرمز السريع" subtitle="اعرضه لاستلام أموال" onBack={onClose} />
+      <ScreenHeader title="الرمز السريع" subtitle="اعرضه لي مسحه المرسل إليك ويظهر اسمك" onBack={onClose} />
       <div className="flex-1 grid place-items-center px-8 pb-8">
         <div className="w-full rounded-3xl p-6 umi-card text-center">
           <div className="w-12 h-12 mx-auto rounded-2xl grid place-items-center text-xl bg-white/5 border border-white/10 mb-3">{me.avatar}</div>
           <p className="font-cairo font-bold text-umi-cream text-sm">{me.name}</p>
-          <svg viewBox="0 0 21 21" className="w-44 h-44 mx-auto my-4" role="img" aria-label="رمز QR للمحفظة">
-            {grid.flatMap((row, r) =>
-              row.map((on, c) =>
-                on ? <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} rx={0.25} fill="#e8c766" /> : null
-              )
-            )}
-          </svg>
+          <div
+            className="w-44 h-44 mx-auto my-4 rounded-2xl overflow-hidden grid place-items-center"
+            style={{ background: "#f5dfa0" }}
+            role="img"
+            aria-label="رمز QR للمحفظة — قابل للمسح"
+            dangerouslySetInnerHTML={{ __html: svg }}
+          />
           <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">{me.phone}</p>
           <p className="flex items-center justify-center gap-1 text-[10px] font-tajawal text-umi-teal mt-3">
-            <ShieldCheck className="w-3.5 h-3.5" /> مرتبط بمحفظتك في قاعدة البيانات
+            <ShieldCheck className="w-3.5 h-3.5" /> رمز حقيقي قابل للمسح — مرتبط بمحفظتك في قاعدة البيانات
           </p>
         </div>
       </div>
