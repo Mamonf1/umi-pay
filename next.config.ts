@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // إزالة علامة أدوات المطور نهائياً — كانت تحجب تبويب الخدمات في الشريط السفلي
+  devIndicators: false,
 };
 
 export default nextConfig;

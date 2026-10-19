@@ -1,4 +1,4 @@
-// UMI PAY — بطاقة التميز (نظام أمريكان إكسبريس: 15 خانة)
+// UMI PAY — بطاقة التميز (16 خانة بأسلوب البطاقات القياسية 4-4-4-4)
 // GET  ?userId= → حالة البطاقة + الأهلية (رصيد 50,000 ل.س فأكثر)
 // POST {userId} → إصدار البطاقة إن كان مستحقاً لها
 import { db } from "@/lib/db";
@@ -6,10 +6,10 @@ import { fail, ok } from "@/lib/umi-server";
 
 const MIN_BALANCE = 50000;
 
-function genAmexNumber(): string {
-  // 15 خانة بنمط AmEx: تبدأ بـ 37 ثم 13 خانة عشوائية
-  let n = "37";
-  for (let i = 0; i < 13; i++) n += Math.floor(Math.random() * 10);
+function genCardNumber(): string {
+  // 16 خانة بالأسلوب القياسي: تبدأ بـ 53 ثم 14 خانة عشوائية — تُعرض 4-4-4-4
+  let n = "53";
+  for (let i = 0; i < 14; i++) n += Math.floor(Math.random() * 10);
   return n;
 }
 
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const card = await db.tamayuzCard.create({
       data: {
         userId,
-        number: genAmexNumber(),
+        number: genCardNumber(),
         holder: user.name,
         expiry: `${mm}/${yy}`,
         tier: "GOLD",

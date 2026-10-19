@@ -80,7 +80,7 @@ export function AboutScreen({ onClose }: { onClose: () => void }) {
               { icon: <Coins className="w-4 h-4 text-umi-gold" />, t: "نقاط أومي", d: "مكافآت تُمنح من الإدارة بقيمة يحددها" },
               { icon: <HandCoins className="w-4 h-4 text-umi-gold" />, t: "قروض مرنة", d: "طلب قرض بالليرة وسداد جزئي أو كامل" },
               { icon: <Store className="w-4 h-4 text-umi-gold" />, t: "دفع المتاجر", d: "ادفع في المتاجر المتصلة برمز 4 أرقام" },
-              { icon: <BadgeCheck className="w-4 h-4 text-umi-gold" />, t: "بطاقة تميز", d: "بطاقة أمريكان إكسبريس 15 خانة لحاملي الرصيد" },
+              { icon: <BadgeCheck className="w-4 h-4 text-umi-gold" />, t: "بطاقة تميز", d: "بطاقة فاخرة 16 خانة بعلامة الدائرتين وعرض الرصيد المباشر" },
               { icon: <RefreshCw className="w-4 h-4 text-umi-gold" />, t: "سعر حي", d: "مكافئ الدولار يُحدّث بسعر الصرف المُدار" },
             ].map((f) => (
               <div key={f.t} className="rounded-xl bg-white/5 border border-white/10 p-3">

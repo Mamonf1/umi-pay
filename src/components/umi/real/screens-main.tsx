@@ -413,7 +413,7 @@ export function HomeScreen({
           <span className="flex-1 min-w-0">
             <span className="block font-cairo font-extrabold text-[13px] gold-text">بطاقة التميز UMI</span>
             <span className="block text-[9.5px] font-tajawal text-umi-muted leading-snug">
-              بطاقة ذهبية بنظام أمريكان إكسبريس — تتطلب رصيد 50,000 {SYP_UNIT} فأكثر
+              بطاقة فاخرة 16 خانة بعرض الرصيد المباشر — تتطلب رصيد 50,000 {SYP_UNIT} فأكثر
             </span>
           </span>
           <ChevronLeft className="w-4 h-4 text-umi-gold shrink-0" />
@@ -575,9 +575,30 @@ export function QrSheet({ me, onClose }: { me: Me; onClose: () => void }) {
   );
 }
 
-/* ============ بطاقة التميز — نظام أمريكان إكسبريس (15 خانة) ============ */
-export function TamayuzCardView({ card, compact }: { card: TamayuzCardT; compact?: boolean }) {
-  const groups = [card.number.slice(0, 4), card.number.slice(4, 10), card.number.slice(10, 15)];
+/* ============ علامة الدائرتين المتشابكتين — ألوان فقط دون أي اسم تجاري ============ */
+function DualCirclesMark({ scale = 1 }: { scale?: number }) {
+  return (
+    <svg
+      width={44 * scale}
+      height={28 * scale}
+      viewBox="0 0 44 28"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: "block" }}
+    >
+      <circle cx="15" cy="14" r="13" fill="#EB001B" />
+      <circle cx="29" cy="14" r="13" fill="#F79E1B" />
+      {/* منطقة التشابك بين الدائرتين */}
+      <path d="M22 3.05 A13 13 0 0 1 22 24.95 A13 13 0 0 1 22 3.05 Z" fill="#FF5F00" />
+    </svg>
+  );
+}
+
+/* ============ بطاقة التميز — 16 خانة بأسلوب المحافظ الحديثة مع الرصيد ============ */
+export function TamayuzCardView({
+  card, compact, balance, usdSyp,
+}: { card: TamayuzCardT; compact?: boolean; balance?: number; usdSyp?: number }) {
+  const groups = [0, 1, 2, 3].map((i) => card.number.slice(i * 4, i * 4 + 4));
   return (
     <div
       className={`relative overflow-hidden rounded-3xl umi-shimmer ${compact ? "p-4" : "p-5"} w-full`}
@@ -593,21 +614,38 @@ export function TamayuzCardView({ card, compact }: { card: TamayuzCardT; compact
           <p className="text-[9px] font-tajawal text-umi-gold/80 tracking-widest">UMI PAY · بطاقة التميز</p>
           <p className="font-cairo font-black text-lg gold-text leading-tight">TAMAYUZ</p>
         </div>
-        <span className="px-2 py-0.5 rounded-full text-[8.5px] font-cairo font-black text-[#0a0416]" style={{ background: "linear-gradient(135deg,#f5dfa0,#c99b3f)" }}>
-          {card.tier}
-        </span>
+        <div className="flex flex-col items-end gap-1.5">
+          <span className="px-2 py-0.5 rounded-full text-[8.5px] font-cairo font-black text-[#0a0416]" style={{ background: "linear-gradient(135deg,#f5dfa0,#c99b3f)" }}>
+            {card.tier}
+          </span>
+          <DualCirclesMark scale={compact ? 0.85 : 1} />
+        </div>
       </div>
-      <div className="mt-4 flex items-center gap-3" dir="ltr">
-        <span className="w-8 h-6 rounded-md grid place-items-center bg-gradient-to-br from-[#f5dfa0] to-[#c99b3f] text-[9px] font-cairo font-black text-[#0a0416]">
+
+      {/* الرصيد المتاح — بأسلوب المحافظ الحديثة */}
+      {typeof balance === "number" && (
+        <div className="mt-3">
+          <p className="text-[8.5px] font-tajawal text-umi-cream/60 tracking-wider">الرصيد المتاح</p>
+          <p className="font-cairo font-black text-[21px] text-umi-cream leading-tight">
+            {fmtSyp(balance)} <span className="text-[11px] font-tajawal text-umi-gold">{SYP_UNIT}</span>
+          </p>
+          {!!usdSyp && usdSyp > 0 && (
+            <p className="text-[9.5px] font-tajawal text-umi-teal" dir="ltr">{usdLine(balance, usdSyp)}</p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3.5 flex items-center gap-3" dir="ltr">
+        <span className="w-8 h-6 rounded-md grid place-items-center bg-gradient-to-br from-[#f5dfa0] to-[#c99b3f] text-[9px] font-cairo font-black text-[#0a0416] shrink-0">
           U
         </span>
-        <p className="font-cairo font-bold tracking-[0.12em] text-umi-cream text-[15px]">
-          {groups[0]} <span className="tracking-[0.18em]">{groups[1]}</span> {groups[2]}
+        <p className="font-cairo font-bold tracking-[0.1em] text-umi-cream text-[14.5px] flex-1 whitespace-nowrap">
+          {groups[0]}&ensp;{groups[1]}&ensp;{groups[2]}&ensp;{groups[3]}
         </p>
       </div>
       <div className="mt-2.5 flex items-end justify-between" dir="ltr">
         <div>
-          <p className="text-[8px] font-tajawal text-umi-muted tracking-widest">CARD MEMBER</p>
+          <p className="text-[8px] font-tajawal text-umi-muted tracking-widest">CARD HOLDER</p>
           <p className="text-[12px] font-tajawal font-bold text-umi-cream">{card.holder}</p>
         </div>
         <div className="text-left">
@@ -621,6 +659,7 @@ export function TamayuzCardView({ card, compact }: { card: TamayuzCardT; compact
 
 /* شاشة بطاقة التميز — الأهلية والإصدار */
 export function TamayuzSheet({ me, onClose }: { me: Me; onClose: () => void }) {
+  const { rates } = useRates();
   const [data, setData] = useState<{ card: TamayuzCardT | null; eligible: boolean; minBalance: number; balance: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -649,11 +688,11 @@ export function TamayuzSheet({ me, onClose }: { me: Me; onClose: () => void }) {
 
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
-      <ScreenHeader title="بطاقة التميز" subtitle="نظام أمريكان إكسبريس — 15 خانة" onBack={onClose} />
+      <ScreenHeader title="بطاقة التميز" subtitle="بطاقة فاخرة — 16 خانة" onBack={onClose} />
       <div className="flex-1 overflow-y-auto umi-scroll px-5 pb-8">
         {data?.card ? (
           <>
-            <div className="mt-2"><TamayuzCardView card={data.card} /></div>
+            <div className="mt-2"><TamayuzCardView card={data.card} balance={data.balance} usdSyp={rates.usdSyp} /></div>
             <div className="rounded-2xl p-4 umi-card mt-4 flex items-center gap-3">
               <BadgeCheck className="w-5 h-5 text-umi-gold shrink-0" />
               <p className="text-[11px] font-tajawal text-umi-cream leading-relaxed">
@@ -743,7 +782,7 @@ export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; 
         {card && (
           <div className="mb-3">
             <p className="text-[11px] font-tajawal font-bold text-umi-muted mb-2">بطاقاتي</p>
-            <TamayuzCardView card={card} compact />
+            <TamayuzCardView card={card} compact balance={me.balance} usdSyp={rates.usdSyp} />
           </div>
         )}
 
