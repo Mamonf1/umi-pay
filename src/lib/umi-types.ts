@@ -1,5 +1,5 @@
 // UMI PAY — أنواع البيانات المشتركة
-export type Role = "individual" | "merchant" | "child" | "admin";
+export type Role = "individual" | "merchant" | "admin";
 
 export interface Me {
   id: string;
@@ -7,10 +7,11 @@ export interface Me {
   phone: string;
   role: Role;
   avatar: string;
-  balance: number;
+  balance: number; // بالليرة السورية
+  points: number; // نقاط أومي
 }
 
-export type TxType = "transfer" | "topup" | "merchant" | "allowance";
+export type TxType = "transfer" | "topup" | "merchant" | "allowance" | "loan" | "loan_repay";
 
 export interface TxItem {
   id: string;
@@ -48,6 +49,41 @@ export interface MerchantT {
   color: string;
 }
 
+export interface LoanItem {
+  id: string;
+  amount: number;
+  paidAmount: number;
+  remaining: number;
+  currency: string;
+  status: "pending" | "approved" | "rejected" | "paid";
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userName?: string;
+  userPhone?: string;
+  userAvatar?: string;
+}
+
+export interface LoansData {
+  loans: LoanItem[];
+  totalRemaining: number;
+  monitoring?: {
+    unpaidCount: number;
+    unpaidTotal: number;
+    unpaid: LoanItem[];
+    pending: LoanItem[];
+  };
+}
+
+export interface TamayuzCardT {
+  id: string;
+  number: string;
+  holder: string;
+  expiry: string;
+  tier: string;
+  status: string;
+}
+
 export interface ThreadT {
   id: string;
   peer: { id: string; name: string; avatar: string; role: string };
@@ -70,41 +106,18 @@ export interface MsgT {
   createdAt: string;
 }
 
-export interface FamilyChild {
-  memberId: string;
-  id: string;
-  name: string;
-  avatar: string;
-  phone: string;
-  balance: number;
-  weeklyLimit: number;
-  frozen: boolean;
-  weekSpent: number;
-}
-
-export interface FamilyData {
-  role: Role;
-  children: FamilyChild[];
-  parent?: { name: string; avatar: string };
-  myLimit?: number;
-  myWeekSpent?: number;
-  myFrozen?: boolean;
-  myBalance?: number;
-}
-
 export const TYPE_LABELS: Record<TxType, string> = {
   transfer: "تحويل",
   topup: "شحن محفظة",
   merchant: "دفع لمتجر",
-  allowance: "مصروف أبناء",
+  allowance: "مصروف",
+  loan: "صرف قرض",
+  loan_repay: "سداد قرض",
 };
 
+/** تنسيق عام بخانتين عشريتين (للاستخدامات الخاصة) */
 export const fmt = (n: number) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** تنسيق مختصر بدون كسور (للأعداد الكبيرة بوحدات OMI) */
-export const fmtInt = (n: number) =>
-  n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 /** وقت نسبي عربي */
 export function relTime(iso: string) {
@@ -116,5 +129,5 @@ export function relTime(iso: string) {
   if (h < 24) return `قبل ${h} س`;
   const d = Math.floor(h / 24);
   if (d < 7) return `قبل ${d} يوم`;
-  return new Date(iso).toLocaleDateString("ar-SA", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString("ar", { day: "numeric", month: "short" });
 }

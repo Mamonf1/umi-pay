@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     if (amt > 0) {
       const sender = await db.user.findUnique({ where: { id: userId }, include: { wallet: true } });
       if (!sender) return fail("المرسل غير موجود", 404);
-      if (sender.pin !== String(pin)) return fail("الرمز السري غير صحيح");
+      if (sender.pin !== String(pin)) return fail("رمز الدفع غير صحيح (4 أرقام)");
       if (r2(sender.wallet?.balance ?? 0) < amt) return fail("الرصيد غير كافٍ");
       const thread = await db.chatThread.findUnique({ where: { id: tid } });
       if (!thread) return fail("المحادثة غير موجودة", 404);

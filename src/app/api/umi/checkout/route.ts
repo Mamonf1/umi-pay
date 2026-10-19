@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const user = await db.user.findUnique({ where: { id: userId }, include: { wallet: true } });
     const merchant = await db.merchant.findUnique({ where: { id: merchantId } });
     if (!user || !merchant) return fail("المستخدم أو التاجر غير موجود", 404);
-    if (user.pin !== String(pin)) return fail("الرمز السري غير صحيح");
+    if (user.pin !== String(pin)) return fail("رمز الدفع غير صحيح (4 أرقام)");
 
     const isWallet = true; // الدفع من محفظة أومي (بطاقة مدى = محاكاة نفس المسار)
     if (isWallet && r2(user.wallet?.balance ?? 0) < amt) return fail("الرصيد غير كافٍ");

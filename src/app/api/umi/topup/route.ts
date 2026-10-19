@@ -1,8 +1,8 @@
-// POST /api/umi/topup — شحن المحفظة (مدى / Apple Pay / بطاقة)
+// POST /api/umi/topup — شحن المحفظة (مدى / Apple Pay / بطاقة) — بالليرة السورية
 import { db } from "@/lib/db";
 import { fail, moveMoney, ok, r2 } from "@/lib/umi-server";
 
-const MIN_TOPUP = 25000; // 25,000 OMI ≈ 12.5 دولار
+const MIN_TOPUP = 25000; // أقل مبلغ شحن: 25,000 ل.س
 
 const METHODS: Record<string, string> = {
   mada: "بطاقة مدى",
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { userId, amount, method } = await req.json();
     const amt = r2(Number(amount));
     if (!userId || !amt || amt < MIN_TOPUP)
-      return fail(`أقل مبلغ للشحن ${MIN_TOPUP.toLocaleString("en-US")} OMI`);
+      return fail(`أقل مبلغ للشحن ${MIN_TOPUP.toLocaleString("en-US")} ل.س`);
     const methodLabel = METHODS[method] ?? "بطاقة مدى";
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return fail("المستخدم غير موجود", 404);

@@ -2,20 +2,22 @@
 
 // UMI PAY — قلب التطبيق: إدارة الجلسة والتنقل ولوحة الحاسوب الجانبية
 import { useCallback, useEffect, useState } from "react";
-import { Database, ShieldCheck, Smartphone, Zap } from "lucide-react";
+import { Database, ShieldCheck, Smartphone, Zap, HandCoins, Coins } from "lucide-react";
 import { PhoneFrame, TabBar, type ScreenKey } from "@/components/umi/phone-frame";
-import { HomeScreen, HistoryScreen, LoginScreen, ProfileScreen, QrSheet } from "@/components/umi/real/screens-main";
-import { SendScreen, TopUpSheet } from "@/components/umi/real/screens-money";
+import {
+  HomeScreen, HistoryScreen, LoginScreen, ProfileScreen, QrSheet, TamayuzSheet,
+} from "@/components/umi/real/screens-main";
+import { SendScreen, TopUpSheet, LoansScreen } from "@/components/umi/real/screens-money";
 import { StoresScreen } from "@/components/umi/real/screens-commerce";
-import { ChatScreen, FamilyScreen } from "@/components/umi/real/screens-social";
+import { ChatScreen } from "@/components/umi/real/screens-social";
 import { api } from "@/lib/umi-client";
 import { RatesProvider, useRates } from "@/lib/rates";
-import { omiToSyp, fmtSyp } from "@/lib/currency";
+import { fmtSyp, usdLine, fmtPoints, SYP_UNIT } from "@/lib/currency";
 import { AdminScreen } from "@/components/umi/real/screens-admin";
 import { UmiLogo } from "@/components/umi/logo";
 import type { HomeData, Me } from "@/lib/umi-types";
 
-type Overlay = "topup" | "history" | "profile" | "qr" | null;
+type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | null;
 
 export function UmiApp() {
   return (
@@ -116,6 +118,7 @@ function UmiAppInner() {
           onQuick={quick}
           onOpenHistory={() => setOverlay("history")}
           onOpenProfile={() => setOverlay("profile")}
+          onOpenTamayuz={() => setOverlay("tamayuz")}
         />
       ) : (
         <div className="h-full grid place-items-center bg-umi-bg">
@@ -124,8 +127,8 @@ function UmiAppInner() {
       ),
       send: <SendScreen me={meData} onDone={() => { refresh(); setTab("home"); }} onExit={() => setTab("home")} />,
       stores: <StoresScreen me={meData} onExit={() => setTab("home")} onPaid={() => { refresh(); setTab("home"); }} />,
+      loans: <LoansScreen me={meData} onChanged={refresh} onExit={() => setTab("home")} />,
       chat: <ChatScreen me={meData} onExit={() => setTab("home")} onChanged={refresh} />,
-      family: <FamilyScreen me={meData} onExit={() => setTab("home")} onChanged={refresh} />,
     };
     screen = (
       <div className="relative h-full">
@@ -134,23 +137,11 @@ function UmiAppInner() {
         {overlay === "history" && meData && <HistoryScreen meId={meData.id} onBack={() => setOverlay(null)} />}
         {overlay === "profile" && meData && <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} />}
         {overlay === "qr" && meData && <QrSheet me={meData} onClose={() => setOverlay(null)} />}
+        {overlay === "tamayuz" && meData && <TamayuzSheet me={meData} onClose={() => { setOverlay(null); refresh(); }} />}
         {!overlay && <TabBar active={tab} onNavigate={setTab} />}
       </div>
     );
   }
-
-  const demoAccounts = [
-    { label: "أحمد — ولي أمر", phone: "0551234567", avatar: "🧑🏻‍💼", wide: false },
-    { label: "متجر الريان — تاجر", phone: "0556789012", avatar: "🛒", wide: false },
-    { label: "خالد — حساب فرعي", phone: "0553456789", avatar: "👦🏻", wide: false },
-    { label: "سارة — مستخدمة", phone: "0552345678", avatar: "👩🏻", wide: false },
-    { label: "إدارة UMI — أدمن المحفظة (تسعير العملة)", phone: "0500000000", avatar: "👑", wide: true },
-  ];
-
-  const demoLogin = async (phone: string) => {
-    const user = await api<Me>("/api/umi/login", { method: "POST", body: JSON.stringify({ phone, pin: "1234" }) });
-    login(user);
-  };
 
   return (
     <main className="min-h-screen flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20 px-4 py-10 relative overflow-hidden">
@@ -167,7 +158,7 @@ function UmiAppInner() {
           <UmiLogo size={52} />
           <div>
             <h1 className="font-cairo font-black text-2xl gold-text leading-none">UMI PAY</h1>
-            <p className="text-[11px] font-tajawal text-umi-muted mt-1">محفظة عملة OMI + بوابة دفع</p>
+            <p className="text-[11px] font-tajawal text-umi-muted mt-1">محفظة بالليرة السورية + مكافئ الدولار + نقاط أومي</p>
           </div>
         </div>
 
@@ -175,21 +166,29 @@ function UmiAppInner() {
           تطبيق موبايل حي — كل عملية تُحفظ فعلياً في قاعدة البيانات
         </h2>
         <p className="text-[13px] font-tajawal text-umi-muted leading-relaxed mb-5">
-          محفظة بعملة OMI الثابتة (1 OMI = 0.0005$) والليرة السورية عملة بديلة يدير سعرها أدمن المحفظة — تحويلات فورية، دفع للتجار عبر بوابة أومي، تحويل داخل المحادثات، وحسابات أبناء بحدود أسبوعية — ببيانات حقيقية في SQLite عبر Prisma.
+          العملة الأساسية هي الليرة السورية في كل الأرصدة والمعاملات والقروض، وتحت كل رصيد يظهر مكافئ الدولار "≈ $" بسعر صرف تديره الإدارة (مع مزامنة من مصدر موثوق)، ونقاط أومي محفظة مكافآت تُمنح من الإدارة فقط — لا بيع ولا شراء.
         </p>
 
         <ul className="space-y-2 mb-6 text-right">
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
             <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Zap className="w-3.5 h-3.5" /></span>
-            عملة OMI ثابتة مقابل الدولار + الليرة السورية بديل يديره الأدمن
+            ل.س أساسية في كل مكان + سطر "≈ $" حي تحت الرصيد
           </li>
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
-            <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Database className="w-3.5 h-3.5" /></span>
-            Prisma + SQLite: مستخدمون، محافظ، معاملات، محادثات، عائلة
+            <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Coins className="w-3.5 h-3.5" /></span>
+            نقاط أومي: يحدد الإدارة قيمتها ويمنحها — لا بيع ولا شراء
+          </li>
+          <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
+            <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><HandCoins className="w-3.5 h-3.5" /></span>
+            قروض بالليرة: طلب ← موافقة الإدارة ← سداد جزئي أو كامل برمز الدفع
           </li>
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
             <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><ShieldCheck className="w-3.5 h-3.5" /></span>
-            رمز سري لكل عملية + حدود أسبوعية للأبناء + تجميد فوري
+            دخول بكلمة مرور 8+ خانات (حروف وأرقام) ودفع برمز 4 أرقام
+          </li>
+          <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
+            <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Database className="w-3.5 h-3.5" /></span>
+            Prisma + SQLite: محافظ، معاملات، قروض، بطاقة تميز — كل شيء حقيقي
           </li>
           <li className="flex items-center gap-2.5 text-[12px] font-tajawal text-umi-cream">
             <span className="w-7 h-7 rounded-lg bg-umi-gold/10 grid place-items-center text-umi-gold shrink-0"><Smartphone className="w-3.5 h-3.5" /></span>
@@ -197,37 +196,27 @@ function UmiAppInner() {
           </li>
         </ul>
 
-        {!meData && (
-          <div className="umi-card rounded-2xl p-4">
-            <p className="text-[11px] font-tajawal text-umi-muted mb-2.5">دخول سريع — اختر دوراً (الرمز 1234):</p>
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((d) => (
-                <button
-                  key={d.phone}
-                  type="button"
-                  onClick={() => demoLogin(d.phone)}
-                  className={`umi-card rounded-xl px-3 py-2 text-right active:bg-white/10 transition-colors ${d.wide ? "col-span-2" : ""}`}
-                >
-                  <span className="text-base block">{d.avatar}</span>
-                  <span className="block text-[11px] font-tajawal font-bold text-umi-cream leading-tight">{d.label}</span>
-                  <span className="block text-[9px] font-tajawal text-umi-muted" dir="ltr">{d.phone}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {meData && (
+        {meData ? (
           <div className="umi-card rounded-2xl p-4 text-[12px] font-tajawal text-umi-cream">
             <span className="inline-block w-2 h-2 rounded-full bg-umi-teal animate-umi-pulse ml-1.5" />
             متصل الآن كـ <span className="font-bold text-umi-gold">{meData.name}</span>
             {isAdmin ? (
-              <span> — لوحة تسعير العملة</span>
+              <span> — لوحة الإدارة الكاملة</span>
             ) : (
-              <span dir="ltr">
-                {" "}{meData.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} OMI
-                <span className="text-umi-muted"> ≈ {fmtSyp(omiToSyp(meData.balance, rates.usdSyp))} ل.س</span>
+              <span>
+                {" "}· <span dir="ltr">{fmtSyp(meData.balance)} {SYP_UNIT}</span>
+                <span className="text-umi-muted" dir="ltr"> {usdLine(meData.balance, rates.usdSyp)}</span>
+                {" "}· {fmtPoints(meData.points)} نقطة أومي
               </span>
             )}
+          </div>
+        ) : (
+          <div className="umi-card rounded-2xl p-4">
+            <p className="text-[11.5px] font-tajawal text-umi-cream leading-relaxed">
+              أنشئ حسابك الجديد من الهاتف مباشرة — بدون شروط معقدة:
+              <br />
+              <span className="text-umi-muted">كلمة مرور 8+ خانات (حروف وأرقام) ورمز دفع من 4 أرقام</span>
+            </p>
           </div>
         )}
       </aside>

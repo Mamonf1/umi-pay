@@ -1,8 +1,11 @@
-// UMI PAY — أدوات مشتركة للخادم
+// UMI PAY — أدوات مشتركة للخادم (العملة الأساسية: الليرة السورية)
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** تقريب الليرة إلى عدد صحيح */
+export const rSyp = (n: number) => Math.round(n);
 
 export const genRef = () =>
   "UMI-" +
@@ -24,12 +27,12 @@ export async function assertChildCanSpend(childId: string, amount: number) {
     where: { fromUserId: childId, createdAt: { gte: weekAgo } },
   });
   const weekSpent = spent._sum.amount ?? 0;
-  if (r2(weekSpent + amount) > link.weeklyLimit)
-    return `تجاوزت الحد الأسبوعي (${link.weeklyLimit.toLocaleString("en-US")} OMI) — المتبقي ${r2(Math.max(0, link.weeklyLimit - weekSpent)).toLocaleString("en-US")} OMI`;
+  if (rSyp(weekSpent + amount) > link.weeklyLimit)
+    return `تجاوزت الحد الأسبوعي (${Math.round(link.weeklyLimit).toLocaleString("en-US")} ل.س) — المتبقي ${Math.max(0, link.weeklyLimit - weekSpent).toLocaleString("en-US")} ل.س`;
   return null;
 }
 
-/** تنفيذ حركة مالية ذرّية: خصم من + إضافة إلى + قيد معاملة */
+/** تنفيذ حركة مالية ذرّية: خصم من + إضافة إلى + قيد معاملة (بالليرة السورية) */
 export async function moveMoney(opts: {
   type: string;
   amount: number;
@@ -38,7 +41,7 @@ export async function moveMoney(opts: {
   merchantId?: string;
   note?: string;
 }) {
-  const amount = r2(opts.amount);
+  const amount = rSyp(opts.amount);
   const ops: Parameters<typeof db.$transaction>[0] = [];
   if (opts.fromUserId)
     ops.push(

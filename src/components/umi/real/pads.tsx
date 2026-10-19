@@ -1,12 +1,11 @@
 "use client";
 
-// UMI PAY — مكوّنات مشتركة: لوحة أرقام، لوحة رمز سري، شاشة نجاح، رأس شاشة
+// UMI PAY — مكوّنات مشتركة: لوحة أرقام (ل.س + مكافئ $)، لوحة رمز دفع، شاشة نجاح، رأس شاشة
 import { useEffect, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { StatusBar } from "@/components/umi/phone-frame";
-import { fmt } from "@/lib/umi-types";
 import { useRates } from "@/lib/rates";
-import { omiToSyp, fmtSyp } from "@/lib/currency";
+import { fmtSyp, usdLine, SYP_UNIT } from "@/lib/currency";
 
 /** رأس شاشة داخلي مع زر رجوع */
 export function ScreenHeader({
@@ -41,40 +40,40 @@ export function ScreenHeader({
   );
 }
 
-/** لوحة إدخال المبلغ — بوحدة OMI مع مكافئ الليرة السورية الحي */
+/** لوحة إدخال المبلغ — بالليرة السورية (العملة الأساسية) + مكافئ الدولار الحي */
 export function AmountPad({
   value,
   onChange,
   accent = "#e8c766",
+  hint,
 }: {
   value: string;
   onChange: (v: string) => void;
   accent?: string;
+  hint?: string;
 }) {
   const { rates } = useRates();
-  const syp = omiToSyp(Number(value) || 0, rates.usdSyp);
   const press = (k: string) => {
     if (k === "del") return onChange(value.slice(0, -1));
-    if (k === ".") {
-      if (value.includes(".")) return;
-      return onChange((value || "0") + ".");
-    }
-    if (value.includes(".") && value.split(".")[1]?.length >= 2) return;
-    if (value === "0" && k !== ".") return onChange(k);
-    if (value.replace(".", "").length >= 7) return;
+    if (value === "0") return onChange(k);
+    if (value.replace("", "").length >= 9) return;
     onChange(value + k);
   };
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "del"];
+  const num = Number(value) || 0;
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"];
   return (
     <div>
-      <div className="text-center py-4" dir="ltr">
-        <span className="font-cairo font-black text-[36px] tracking-tight" style={{ color: accent }}>
-          {value || "0"}
-        </span>
-        <span className="text-umi-muted font-tajawal text-sm mr-2">OMI</span>
-        <p className="text-[10px] font-tajawal text-umi-muted mt-0.5" dir="ltr">
-          ≈ {fmtSyp(syp)} ل.س
+      <div className="text-center py-4">
+        <div dir="ltr" className="flex items-baseline justify-center gap-2">
+          <span className="font-cairo font-black text-[34px] tracking-tight" style={{ color: accent }}>
+            {value || "0"}
+          </span>
+          <span className="text-umi-muted font-tajawal text-sm">{SYP_UNIT}</span>
+        </div>
+        <p className="text-[11px] font-tajawal text-umi-gold/80 mt-0.5" dir="ltr">
+          {usdLine(num, rates.usdSyp)}
         </p>
+        {hint && <p className="text-[10px] font-tajawal text-umi-muted mt-1">{hint}</p>}
       </div>
       <div className="grid grid-cols-3 gap-1.5 px-2" dir="ltr">
         {keys.map((k) => (
@@ -93,8 +92,8 @@ export function AmountPad({
   );
 }
 
-/** لوحة الرمز السري (4 أرقام) */
-export function PinPad({ onComplete, error }: { onComplete: (pin: string) => void; error?: string }) {
+/** لوحة رمز الدفع (4 أرقام فقط) — لتأكيد المدفوعات */
+export function PinPad({ onComplete, error, title }: { onComplete: (pin: string) => void; error?: string; title?: string }) {
   const [pin, setPin] = useState("");
   useEffect(() => {
     if (pin.length === 4) {
@@ -113,6 +112,7 @@ export function PinPad({ onComplete, error }: { onComplete: (pin: string) => voi
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
   return (
     <div>
+      {title && <p className="text-center text-[12px] font-tajawal text-umi-cream mb-1">{title}</p>}
       <div className="flex justify-center gap-3 py-4" dir="ltr">
         {[0, 1, 2, 3].map((i) => (
           <span
@@ -145,6 +145,19 @@ export function PinPad({ onComplete, error }: { onComplete: (pin: string) => voi
   );
 }
 
+/** مبلغ بالليرة + مكافئ الدولار (داخل شاشات النجاح وغيرها) */
+export function SypAmount({ amount, sign = "" }: { amount: number; sign?: string }) {
+  const { rates } = useRates();
+  return (
+    <div className="mb-1">
+      <p className="font-cairo font-black text-[26px] gold-text leading-tight" dir="ltr">
+        {sign}{fmtSyp(amount)} <span className="text-base font-tajawal">{SYP_UNIT}</span>
+      </p>
+      <p className="text-[11px] font-tajawal text-umi-muted" dir="ltr">{usdLine(amount, rates.usdSyp)}</p>
+    </div>
+  );
+}
+
 /** شاشة نجاح العملية */
 export function SuccessView({
   title,
@@ -158,7 +171,7 @@ export function SuccessView({
   onDone: () => void;
 }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 2200);
+    const t = setTimeout(onDone, 2400);
     return () => clearTimeout(t);
   }, [onDone]);
   return (
@@ -170,28 +183,13 @@ export function SuccessView({
         <Check className="w-10 h-10 text-[#0a0416]" strokeWidth={3} />
       </div>
       <h3 className="font-cairo font-extrabold text-xl text-umi-cream mb-1">{title}</h3>
-      {amount !== undefined && (
-        <SypAmount amount={amount} />
-      )}
+      {amount !== undefined && <SypAmount amount={amount} />}
       {reference && (
         <p className="text-[11px] font-tajawal text-umi-muted" dir="ltr">
           {reference}
         </p>
       )}
       <p className="text-[11px] font-tajawal text-umi-teal mt-4">تم الحفظ في قاعدة البيانات ✓</p>
-    </div>
-  );
-}
-
-/** مبلغ في شاشة النجاح — OMI + مكافئ الليرة */
-function SypAmount({ amount }: { amount: number }) {
-  const { rates } = useRates();
-  return (
-    <div className="mb-1">
-      <p className="font-cairo font-black text-[28px] gold-text leading-tight" dir="ltr">
-        {fmt(amount)} <span className="text-base">OMI</span>
-      </p>
-      <p className="text-[10px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(omiToSyp(amount, rates.usdSyp))} ل.س</p>
     </div>
   );
 }
@@ -207,7 +205,7 @@ export function ProcessingView({ label = "جارٍ تنفيذ العملية" }:
   );
 }
 
-/** صف قائمة معاملة */
+/** صف قائمة معاملة — المبلغ بالليرة السورية */
 export function TxRow({
   emoji,
   title,
@@ -239,8 +237,8 @@ export function TxRow({
         <span className="block text-[10px] font-tajawal text-umi-muted truncate">{sub}</span>
       </span>
       <span className={`font-cairo font-bold text-[13px] shrink-0 ${color}`} dir="ltr">
-        {sign}{fmt(amount)}
-        <span className="text-[8px] text-umi-muted font-tajawal"> OMI</span>
+        {sign}{fmtSyp(amount)}
+        <span className="text-[8px] text-umi-muted font-tajawal"> {SYP_UNIT}</span>
       </span>
     </button>
   );

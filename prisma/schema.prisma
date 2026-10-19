@@ -1,5 +1,7 @@
 // UMI PAY — بوابة دفع: مخطط قاعدة البيانات
-// Users / Wallets / Transactions (Gateway) / Merchants / Chat / Family sub-accounts
+// العملة الأساسية: الليرة السورية (ل.س) — الدولار مكافئ عرض يديره الأدمن
+// نقاط أومي: محفظة مكافآت تُمنح من الإدارة فقط (غير قابلة للبيع أو الشراء)
+// الأمان: كلمة مرور المحفظة (8+ خانات حروف وأرقام) + رمز دفع منفصل (4 أرقام)
 
 generator client {
   provider = "prisma-client-js"
@@ -14,11 +16,14 @@ model User {
   id               String         @id @default(cuid())
   name             String
   phone            String         @unique
-  pin              String         @default("1234")
-  role             String         @default("individual") // individual | merchant | child | admin
+  pass             String                     // كلمة مرور الدخول: 8 خانات أو أكثر (حروف + أرقام)
+  pin              String         @default("1234") // رمز الدفع: 4 أرقام فقط (تأكيد المدفوعات)
+  role             String         @default("individual") // individual | merchant | admin
   avatar           String         @default("👤")
   wallet           Wallet?
   merchant         Merchant?
+  cards            TamayuzCard[]
+  loans            LoanRequest[]
   sentMessages     ChatMessage[]  @relation("Sender")
   threadsA         ChatThread[]   @relation("ThreadA")
   threadsB         ChatThread[]   @relation("ThreadB")
@@ -32,7 +37,8 @@ model User {
 model Wallet {
   id      String @id @default(cuid())
   userId  String @unique
-  balance Float  @default(0)
+  balance Float  @default(0) // بالليرة السورية — العملة الأساسية
+  points  Float  @default(0) // نقاط أومي — تُمنح من الإدارة فقط
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -50,8 +56,8 @@ model Merchant {
 model Transaction {
   id         String    @id @default(cuid())
   reference  String    @unique
-  type       String // transfer | topup | merchant | allowance
-  amount     Float
+  type       String // transfer | topup | merchant | allowance | loan | loan_repay
+  amount     Float // بالليرة السورية
   status     String    @default("completed") // completed | failed
   note       String?
   fromUserId String?
@@ -61,6 +67,33 @@ model Transaction {
   to         User?     @relation("TxTo", fields: [toUserId], references: [id])
   merchant   Merchant? @relation(fields: [merchantId], references: [id])
   createdAt  DateTime  @default(now())
+}
+
+// طلبات القروض — بالليرة السورية، توافقها الإدارة ثم يُشحن الرصيد فوراً
+model LoanRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Float // مبلغ القرض بالليرة
+  paidAmount Float    @default(0) // ما سُدّد حتى الآن
+  currency   String   @default("SYP")
+  status     String   @default("pending") // pending | approved | rejected | paid
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// بطاقة التميز — نظام أمريكان إكسبريس (15 خانة)، شرط الإصدار رصيد 50,000 ل.س فأكثر
+model TamayuzCard {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  number    String // 15 خانة بنظام AmEx — تُعرض مجمعة 4-6-5
+  holder    String
+  expiry    String // MM/YY
+  tier      String   @default("GOLD")
+  status    String   @default("active")
+  createdAt DateTime @default(now())
 }
 
 model ChatThread {
@@ -92,18 +125,18 @@ model FamilyMember {
   id          String  @id @default(cuid())
   parentId    String
   childId     String  @unique
-  weeklyLimit Float   @default(100)
+  weeklyLimit Float   @default(100000)
   frozen      Boolean @default(false)
   parent      User    @relation("Parent", fields: [parentId], references: [id])
   child       User    @relation("Child", fields: [childId], references: [id])
 }
 
-// تسعير العملة — صف وحيد يديره أدمن المحفظة
-// OMI عملة خاصة بالمحفظة (ليست مشفرة) سعرها ثابت مقابل الدولار
-// usdSyp: سعر الدولار بالليرة السورية (العملة البديلة للعرض) — يتحكم به الأدمن
+// تسعير الصرف — صف وحيد يديره أدمن المحفظة
+// usdSyp: سعر الدولار مقابل الليرة السورية (يمكن مزامنته من مصدر موثوق)
+// pointSyp: قيمة نقطة أومي الواحدة بالليرة — النقاط تُمنح من الإدارة ولا تُباع ولا تُشترى
 model CurrencySettings {
   id        String   @id @default("main")
-  omiUsd    Float    @default(0.0005) // سعر ثابت: 1 OMI = 0.0005 دولار
-  usdSyp    Float    @default(13000)  // سعر الدولار بالليرة السورية
+  usdSyp    Float    @default(13000)
+  pointSyp  Float    @default(10)
   updatedAt DateTime @updatedAt
 }

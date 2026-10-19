@@ -1,16 +1,16 @@
 "use client";
 
 import { ReactNode } from "react";
-import { BatteryFull, House, QrCode, MessageCircle, Users, ArrowUpLeft } from "lucide-react";
+import { BatteryFull, House, QrCode, MessageCircle, HandCoins, ArrowUpLeft } from "lucide-react";
 
-export type ScreenKey = "home" | "send" | "stores" | "chat" | "family";
+export type ScreenKey = "home" | "send" | "stores" | "loans" | "chat";
 
 export const SCREEN_LABELS: Record<ScreenKey, string> = {
   home: "الرئيسية",
   send: "إرسال أموال",
   stores: "المتاجر",
+  loans: "القروض",
   chat: "المحادثات",
-  family: "الحسابات الفرعية",
 };
 
 /** iOS-style status bar rendered at top of every screen */
@@ -42,8 +42,8 @@ export function TabBar({
     { key: "home", label: "الرئيسية", icon: <House className="w-5 h-5" strokeWidth={1.8} /> },
     { key: "stores", label: "المتاجر", icon: <QrCode className="w-5 h-5" strokeWidth={1.8} /> },
     { key: "send", label: "إرسال", icon: <ArrowUpLeft className="w-5 h-5" strokeWidth={1.8} /> },
+    { key: "loans", label: "القروض", icon: <HandCoins className="w-5 h-5" strokeWidth={1.8} /> },
     { key: "chat", label: "المحادثات", icon: <MessageCircle className="w-5 h-5" strokeWidth={1.8} /> },
-    { key: "family", label: "العائلة", icon: <Users className="w-5 h-5" strokeWidth={1.8} /> },
   ];
   return (
     <nav

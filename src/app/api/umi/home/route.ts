@@ -75,6 +75,7 @@ export async function GET(req: Request) {
         role: user.role,
         avatar: user.avatar,
         balance: r2(user.wallet?.balance ?? 0),
+        points: user.wallet?.points ?? 0,
       },
       weekIn: r2(inAgg._sum.amount ?? 0),
       weekOut: r2(outAgg._sum.amount ?? 0),

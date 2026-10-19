@@ -1,12 +1,12 @@
 "use client";
 
-// UMI PAY — مزوّد أسعار الصرف: يجلب تسعير العملة مرة واحدة ويوزّعه على كل الشاشات
+// UMI PAY — مزوّد تسعير الصرف: يجلب التسعير مرة واحدة ويوزّعه على كل الشاشات
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/umi-client";
 
 export interface Rates {
-  omiUsd: number; // سعر OMI الثابت مقابل الدولار (0.0005)
-  usdSyp: number; // سعر الدولار بالليرة السورية — يديره الأدمن
+  usdSyp: number; // سعر الدولار بالليرة السورية — يديره الأدمن أو يُزامَن من مصدر موثوق
+  pointSyp: number; // قيمة نقطة أومي الواحدة بالليرة — يحددها الأدمن
   updatedAt?: string;
 }
 
@@ -16,7 +16,7 @@ interface RatesCtx {
   refresh: () => void;
 }
 
-const DEFAULT_RATES: Rates = { omiUsd: 0.0005, usdSyp: 13000 };
+const DEFAULT_RATES: Rates = { usdSyp: 13000, pointSyp: 10 };
 
 const Ctx = createContext<RatesCtx>({
   rates: DEFAULT_RATES,
@@ -30,7 +30,13 @@ export function RatesProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(() => {
     api<Rates>("/api/umi/currency")
-      .then((r) => setRates({ omiUsd: r.omiUsd, usdSyp: r.usdSyp, updatedAt: r.updatedAt }))
+      .then((r) =>
+        setRates({
+          usdSyp: r.usdSyp ?? DEFAULT_RATES.usdSyp,
+          pointSyp: r.pointSyp ?? DEFAULT_RATES.pointSyp,
+          updatedAt: r.updatedAt,
+        })
+      )
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

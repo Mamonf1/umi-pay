@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const from = await db.user.findUnique({ where: { id: fromId }, include: { wallet: true } });
     const to = await db.user.findUnique({ where: { id: toId }, include: { wallet: true } });
     if (!from || !to) return fail("أحد الطرفين غير موجود", 404);
-    if (from.pin !== String(pin)) return fail("الرمز السري غير صحيح");
+    if (from.pin !== String(pin)) return fail("رمز الدفع غير صحيح (4 أرقام)");
     if (r2(from.wallet?.balance ?? 0) < amt) return fail("الرصيد غير كافٍ");
 
     const childErr = await assertChildCanSpend(fromId, amt);
