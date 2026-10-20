@@ -248,3 +248,28 @@ Stage Summary:
 - «التقاط صورة للرمز» يعمل داخل معاينة الدردشة المدمجة (كاميرا النظام بلا getUserMedia) — مُثبت E2E
 - زر «فتح في تبويب جديد» يمنح الكاميرا الحية عند الحاجة، والإدخال اليدوي يبقى بديلاً دائماً
 - لقطات: qa/v21-13..15
+
+---
+Task ID: 22
+Agent: main (Z.ai)
+Task: «داخل تطبيق أومي… او اعد كتابة التطبيق مع منح الصلاحيات للتطبيق» — تحويل أومي باي إلى تطبيق حقيقي يُثبَّت على الهاتف (PWA) بصلاحية كاميرا دائمة
+
+Work Log:
+- التشخيص: الصلاحية تديرها المتصفحات/النظام ولا يمكن فرضها من الكود داخل صفحة ويب — الحل الصحيح «منح الصلاحيات للتطبيق» هو التثبيت كتطبيق مستقل (PWA standalone): يطلب الكاميرا مرة واحدة ويُحفظ الإذن
+- أيقونات من هوية أومي: scripts/icon-src.html (بلاطة ذهبية بحرف U نفس شعار التطبيق) → التقاط 1024px بالمتصفح (عادي + maskable) → sharp: icon-512/icon-192/maskable-512/apple-touch-icon في public/icons
+- public/manifest.webmanifest: الاسم «أومي باي»، عربي RTL، standalone، portrait، ألوان #05030c، أيقونات 192/512/maskable
+- public/sw.js: service worker pass-through بلا تخزين مؤقت (لا يتعارض مع dev ولا يعلق التحديثات)
+- layout.tsx: metadata.manifest + applicationName + appleWebApp (iOS standalone) + icons + viewport (themeColor، viewportFit cover) + PwaRegister في body
+- src/components/umi/real/pwa.tsx جديد: PwaRegister + isStandalone/useIsStandalone + useInstallReady (beforeinstallprompt مع deferral) + installNow + InstallAppChip (كامل/مضغوط) + HomeInstallBanner — الكل يختفي تلقائياً داخل iframe أو بعد التثبيت
+- screens-scan.tsx: بطاقة الخطأ داخل iframe أصبحت: «فتح أومي في تبويب مستقل» ذهبي أساسي ← «أو التقط صورة للرمز» ثانوي ← إعادة المحاولة ← InstallAppChip (خارج iframe: التقاط الصورة ذهبي أساسي)
+- screens-main.tsx: HomeInstallBanner أسفل ترويسة الرئيسية (قابل للإغلاق) + InstallAppChip في الملف الشخصي فوق تسجيل الخروج
+- QA متصفح: manifest/theme/appleIcon في head ✓، SW مسجل (SW_REGS=1) ✓، محاكاة beforeinstallprompt → بانر الرئيسية ظاهر (qa/v21-16) + زر التثبيت في بطاقة القارئ (qa/v21-17) ✓، داخل iframe حقيقي: الترتيب الجديد (فتح مستقل ذهبي + التقاط ثانوي) (qa/v21-18) ✓
+- الأصول: /manifest.webmanifest + /sw.js + 4 أيقونات كلها 200
+- تنظيف iframe-t.html؛ القاعدة كما هي (3 مستخدمين، أرصدة ثابتة -617500/842500/258585)
+- tsc نظيف لـ src، الخادم 200
+
+Stage Summary:
+- أومي باي الآن PWA كامل: أيقونة على الشاشة الرئيسية بنفس شعار U الذهبي، يفتح ملء الشاشة بلا شريط متصفح
+- عند التثبيت: موجة صلاحية كاميرا واحدة تُحفظ دائماً — الكاميرا الحية في القارئ تعمل كأي تطبيق أصلي
+- مسارات القارئ الثلاثة + اليدوي بقيت كما هي، مع ترتيب أذكى للأزرار داخل المعاينة المدمجة
+- لقطات: qa/v21-16..18 (+ أيقونات qa/icon-*.png)

@@ -10,6 +10,7 @@ import {
 import { AboutFooterLink } from "@/components/umi/real/screens-about";
 import { StatusBar } from "@/components/umi/shell";
 import { ScreenHeader, TxRow, SypAmount } from "@/components/umi/real/pads";
+import { HomeInstallBanner, InstallAppChip } from "@/components/umi/real/pwa";
 import { UmiLogo } from "@/components/umi/logo";
 import { api } from "@/lib/umi-client";
 import QRCode from "qrcode";
@@ -313,6 +314,9 @@ export function HomeScreen({
           <Bell className="w-4 h-4" strokeWidth={1.8} />
         </button>
       </header>
+
+      {/* ==== دعوة تثبيت التطبيق (تختفي بعد التثبيت أو بالإغلاق) ==== */}
+      <HomeInstallBanner />
 
       <div className="flex-1 overflow-y-auto umi-scroll pb-24">
         {/* ==== بطاقة الرصيد البطلة ==== */}
@@ -799,6 +803,8 @@ export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; 
             <Info className="w-4 h-4 text-umi-gold" /> من نحن — المعلومات والشروط
           </button>
         )}
+
+        <InstallAppChip className="mb-2.5" />
 
         <button
           type="button"

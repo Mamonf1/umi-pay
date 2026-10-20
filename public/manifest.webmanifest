@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "UMI PAY — محفظة أومي",
+  "short_name": "أومي باي",
+  "description": "محفظة أومي الإلكترونية: تحويلات بين الحسابات بمسح QR، متاجر، قروض، نقاط أومي وبطاقة تميز — بالليرة السورية مع مكافئ الدولار.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05030c",
+  "theme_color": "#05030c",
+  "categories": ["finance", "shopping"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

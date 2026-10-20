@@ -13,6 +13,7 @@ import { Camera, CameraOff, ExternalLink, ImageUp, Keyboard, Loader2, RefreshCw,
 import {
   ScreenHeader, AmountPad, PinPad, ProcessingView, SuccessView, SypAmount,
 } from "@/components/umi/real/pads";
+import { InstallAppChip } from "@/components/umi/real/pwa";
 import { api } from "@/lib/umi-client";
 import { fmtSyp, usdLine, SYP_UNIT } from "@/lib/currency";
 import { useRates } from "@/lib/rates";
@@ -311,23 +312,37 @@ export function QrScannerSheet({
                 </div>
                 <p className="text-[11px] font-tajawal text-umi-cream leading-relaxed">{camErr}</p>
                 <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    disabled={photoBusy}
-                    onClick={() => fileRef.current?.click()}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl font-tajawal font-extrabold text-[11.5px] text-[#0a0416] disabled:opacity-50 active:scale-[0.98] transition-all"
-                    style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
-                  >
-                    {photoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                    {photoBusy ? "جارٍ قراءة الصورة…" : "التقاط صورة للرمز بكاميرا الجهاز"}
-                  </button>
-                  {inIframe && (
+                  {inIframe ? (
+                    <>
+                      {/* داخل المعاينة المدمجة: التبويب المستقل هو الحل الأكمل (كاميرا حية + تثبيت) */}
+                      <button
+                        type="button"
+                        onClick={openStandalone}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl font-tajawal font-extrabold text-[11.5px] text-[#0a0416] active:scale-[0.98] transition-all"
+                        style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+                      >
+                        <ExternalLink className="w-4 h-4" /> فتح أومي في تبويب مستقل — لتفعيل الكاميرا
+                      </button>
+                      <button
+                        type="button"
+                        disabled={photoBusy}
+                        onClick={() => fileRef.current?.click()}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-xl font-tajawal font-bold text-[11px] text-umi-teal bg-umi-teal/10 border border-umi-teal/25 disabled:opacity-50"
+                      >
+                        {photoBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                        {photoBusy ? "جارٍ قراءة الصورة…" : "أو التقط صورة للرمز بكاميرا الجهاز"}
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
-                      onClick={openStandalone}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-xl font-tajawal font-bold text-[11px] text-umi-teal bg-umi-teal/10 border border-umi-teal/25"
+                      disabled={photoBusy}
+                      onClick={() => fileRef.current?.click()}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl font-tajawal font-extrabold text-[11.5px] text-[#0a0416] disabled:opacity-50 active:scale-[0.98] transition-all"
+                      style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> فتح التطبيق في تبويب جديد لتفعيل الكاميرا الحية
+                      {photoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                      {photoBusy ? "جارٍ قراءة الصورة…" : "التقاط صورة للرمز بكاميرا الجهاز"}
                     </button>
                   )}
                   <button
@@ -337,6 +352,7 @@ export function QrScannerSheet({
                   >
                     <RefreshCw className="w-3 h-3" /> إعادة محاولة الكاميرا الحية
                   </button>
+                  <InstallAppChip />
                 </div>
               </div>
             </div>
