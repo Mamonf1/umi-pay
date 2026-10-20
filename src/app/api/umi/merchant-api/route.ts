@@ -11,7 +11,20 @@ const genKey = () => "umi_live_" + crypto.randomBytes(24).toString("hex");
 async function ownMerchant(userId: string) {
   if (!userId) return null;
   const m = await db.merchant.findUnique({ where: { ownerId: userId } });
-  return m;
+  if (m) return m;
+  // شبكة أمان: مستخدم دوره «تاجر» بلا سجل (مثل حساب سُجّل قبل ربط التسجيل بالتاجر) — ينشأ له سجل كامل بمفتاح
+  const u = await db.user.findUnique({ where: { id: userId } });
+  if (!u || u.role !== "merchant") return null;
+  return db.merchant.create({
+    data: {
+      ownerId: u.id,
+      name: u.name.slice(0, 40),
+      category: "متجر عام",
+      emoji: "🛒",
+      apiKey: genKey(),
+      apiKeyAt: new Date(),
+    },
+  });
 }
 
 export async function GET(req: Request) {

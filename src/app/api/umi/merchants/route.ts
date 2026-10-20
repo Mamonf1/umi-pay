@@ -7,5 +7,5 @@ export async function GET() {
     select: { id: true, name: true, category: true, emoji: true, color: true },
     orderBy: { name: "asc" },
   });
-  return ok(merchants);
+  return ok({ merchants });
 }

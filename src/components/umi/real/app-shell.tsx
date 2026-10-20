@@ -140,7 +140,7 @@ function UmiAppInner() {
         {overlay === "topup" && meData && <TopUpSheet me={meData} onClose={() => setOverlay(null)} onDone={() => { setOverlay(null); refresh(); }} />}
         {overlay === "history" && meData && <HistoryScreen meId={meData.id} onBack={() => setOverlay(null)} />}
         {overlay === "profile" && meData && (
-          <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} onOpenAbout={() => setOverlay("about")} />
+          <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} onOpenAbout={() => setOverlay("about")} onUpgraded={refresh} />
         )}
         {overlay === "qr" && meData && <QrSheet me={meData} onClose={() => setOverlay(null)} />}
         {overlay === "scan" && meData && (

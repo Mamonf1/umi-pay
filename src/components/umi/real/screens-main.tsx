@@ -732,12 +732,14 @@ export function TamayuzSheet({ me, onClose }: { me: Me; onClose: () => void }) {
 }
 
 /* ============ الملف الشخصي — المحفظة + الأمان + البطاقات ============ */
-export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; onLogout: () => void; onClose: () => void; onOpenAbout?: () => void }) {
+export function ProfileScreen({ me, onLogout, onClose, onOpenAbout, onUpgraded }: { me: Me; onLogout: () => void; onClose: () => void; onOpenAbout?: () => void; onUpgraded?: () => void }) {
   const { rates } = useRates();
   const roleLabel =
     me.role === "merchant" ? "حساب تاجر" : me.role === "admin" ? "أدمن المحفظة" : "حساب شخصي";
 
   const [card, setCard] = useState<TamayuzCardT | null>(null);
+  // بعد الترقية يبقى مظهر بطاقة النجاح ظاهراً رغم تغيّر الدور (حتى يرى المستخدم مفتاح API)
+  const [justUpgraded, setJustUpgraded] = useState(false);
   useEffect(() => {
     api<{ card: TamayuzCardT | null }>(`/api/umi/tamayuz?userId=${me.id}`)
       .then((d) => setCard(d.card))
@@ -785,6 +787,11 @@ export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; 
         {/* الأمان */}
         <SecuritySection me={me} />
 
+        {/* الترقية إلى حساب تاجر — للحسابات الفردية فقط */}
+        {(me.role === "individual" || justUpgraded) && (
+          <MerchantUpgradeCard me={me} onUpgraded={() => { setJustUpgraded(true); onUpgraded?.(); }} />
+        )}
+
         <div className="rounded-2xl p-4 umi-card mb-3">
           <p className="flex items-center gap-1.5 text-[11px] font-tajawal text-umi-teal mb-1">
             <ShieldCheck className="w-4 h-4" /> جلسة موثوقة
@@ -815,6 +822,71 @@ export function ProfileScreen({ me, onLogout, onClose, onOpenAbout }: { me: Me; 
         </button>
         <p className="text-center text-[9px] font-tajawal text-umi-muted/60 mt-4">UMI PAY · v2.0 — ل.س أساسية + دولار + نقاط أومي</p>
       </div>
+    </div>
+  );
+}
+
+/* الترقية إلى حساب تاجر: أي حساب فردي يصبح تاجراً بمعلومات API كاملة */
+function MerchantUpgradeCard({ me, onUpgraded }: { me: Me; onUpgraded?: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [key, setKey] = useState("");
+  const [err, setErr] = useState("");
+
+  const upgrade = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api<{ apiKey: string | null; message: string }>("/api/umi/become-merchant", {
+        method: "POST",
+        body: JSON.stringify({ userId: me.id }),
+      });
+      setKey(r.apiKey ?? "");
+      setDone(true);
+      onUpgraded?.();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl p-4 mb-3 border border-umi-gold/25" style={{ background: "linear-gradient(160deg,rgba(232,199,102,0.10),rgba(123,91,199,0.08))" }}>
+      <p className="flex items-center gap-1.5 text-[12px] font-cairo font-extrabold text-umi-cream mb-1.5">
+        <Store className="w-4 h-4 text-umi-gold" /> طوّر حسابك إلى حساب تاجر
+      </p>
+      {done ? (
+        <div>
+          <p className="text-[11px] font-tajawal text-umi-teal leading-relaxed">
+            مبروك! أصبح حسابك حساب تاجر ✓ — فُعّلت لوحة معلومات API في تبويب المتاجر، وأصبح بإمكانك استقبال مدفوعات متجرك عبر أومي باي.
+          </p>
+          {key && (
+            <p className="mt-2 text-[10px] font-tajawal text-umi-muted leading-relaxed">
+              مفتاح API الخاص بك:
+              <span className="block mt-1 px-2 py-1.5 rounded-lg bg-black/30 text-left font-mono text-[9.5px] text-umi-gold break-all" dir="ltr">{key}</span>
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          <ul className="text-[10.5px] font-tajawal text-umi-muted leading-relaxed space-y-1 mb-3">
+            <li className="flex items-start gap-1.5"><BadgeCheck className="w-3.5 h-3.5 text-umi-gold shrink-0 mt-0.5" /> استقبل مدفوعات عملاء متجرك عبر أومي باي</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="w-3.5 h-3.5 text-umi-gold shrink-0 mt-0.5" /> لوحة معلومات API بمفتاح ربط حقيقي ورابط إشعارات (Webhook)</li>
+            <li className="flex items-start gap-1.5"><BadgeCheck className="w-3.5 h-3.5 text-umi-gold shrink-0 mt-0.5" /> ظهور متجرك في تبويب المتاجر لكل مستخدمي المحفظة</li>
+          </ul>
+          {err && <p className="text-[10px] font-tajawal text-umi-red mb-2">{err}</p>}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={upgrade}
+            className="w-full h-10 rounded-xl font-cairo font-bold text-[12px] text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
+            style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+          >
+            {busy ? "جارٍ الترقية…" : "الترقية إلى حساب تاجر"}
+          </button>
+        </>
+      )}
     </div>
   );
 }
