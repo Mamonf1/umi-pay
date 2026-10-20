@@ -70,17 +70,33 @@ model Transaction {
 }
 
 // طلبات القروض — بالليرة السورية، توافقها الإدارة ثم يُشحن الرصيد فوراً
+// feesAccrued: رسوم التطبيق الشهرية المتراكمة (1.5% شهرياً على المتبقي) — تُضاف إلى المتبقي على المقترض
 model LoanRequest {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount     Float // مبلغ القرض بالليرة
-  paidAmount Float    @default(0) // ما سُدّد حتى الآن
-  currency   String   @default("SYP")
-  status     String   @default("pending") // pending | approved | rejected | paid
-  note       String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Float // مبلغ القرض بالليرة
+  paidAmount  Float     @default(0) // ما سُدّد حتى الآن
+  feesAccrued Float     @default(0) // رسوم التطبيق المتراكمة على هذا القرض
+  lastFeeAt   DateTime? // تاريخ آخر احتساب رسوم شهرية
+  currency    String    @default("SYP")
+  status      String    @default("pending") // pending | approved | rejected | paid
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// صندوق أرباح المحفظة — كل إيراد يحققه التطبيق يدخل هذا الصندوق
+// loan_fee: الرسوم الشهرية من القروض (1.5%) | card_fee: رسوم استعمال بطاقة الاعتماد (3.5%) | manual: إدخال يدوي من الأدمن
+model ProfitEntry {
+  id        String   @id @default(cuid())
+  kind      String // loan_fee | card_fee | manual
+  title     String
+  amount    Float
+  loanId    String?
+  userId    String?
+  note      String?
+  createdAt DateTime @default(now())
 }
 
 // بطاقة التميز — نظام أمريكان إكسبريس (15 خانة)، شرط الإصدار رصيد 50,000 ل.س فأكثر
@@ -135,8 +151,10 @@ model FamilyMember {
 // usdSyp: سعر الدولار مقابل الليرة السورية (يمكن مزامنته من مصدر موثوق)
 // pointSyp: قيمة نقطة أومي الواحدة بالليرة — النقاط تُمنح من الإدارة ولا تُباع ولا تُشترى
 model CurrencySettings {
-  id        String   @id @default("main")
-  usdSyp    Float    @default(13000)
-  pointSyp  Float    @default(10)
-  updatedAt DateTime @updatedAt
+  id              String   @id @default("main")
+  usdSyp          Float    @default(13000)
+  pointSyp        Float    @default(10)
+  loanMonthlyRate Float    @default(1.5) // نسبة التطبيق من القروض شهرياً — بالمئة
+  cardFeeRate     Float    @default(3.5) // نسبة استعمال بطاقة الاعتماد — بالمئة
+  updatedAt       DateTime @updatedAt
 }

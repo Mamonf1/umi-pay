@@ -1,0 +1,593 @@
+     1→"use client";
+     2→
+     3→// UMI PAY — لوحة أدمن المحفظة
+     4→// نظرة عامة / تسعير الصرف (دولار + نقاط + مزامنة من مصدر موثوق) / منح نقاط أومي / مراقبة القروض
+     5→import { useCallback, useEffect, useState } from "react";
+     6→import {
+     7→  LogOut, Users, Store, ArrowLeftRight, Coins, RefreshCw, Check, X,
+     8→  HandCoins, Landmark, Globe, Save, Clock, Wallet, Info,
+     9→} from "lucide-react";
+    10→import { StatusBar } from "@/components/umi/shell";
+    11→import { CoinIcon } from "@/components/umi/real/screens-main";
+    12→import { api } from "@/lib/umi-client";
+    13→import { useRates } from "@/lib/rates";
+    14→import { fmtSyp, fmtUsd, sypToUsd, fmtPoints, pointsToSyp, SYP_UNIT } from "@/lib/currency";
+    15→import { relTime, type Me } from "@/lib/umi-types";
+    16→import type { LoanItem } from "@/lib/umi-types";
+    17→
+    18→interface AdminData {
+    19→  admin: { name: string; avatar: string };
+    20→  settings: { usdSyp: number; pointSyp: number; updatedAt: string };
+    21→  stats: { users: number; merchants: number; txs: number; volume: number; balances: number; pointsTotal: number };
+    22→  pointsHolders: { name: string; phone: string; avatar: string; points: number }[];
+    23→  loans: {
+    24→    pending: LoanItem[];
+    25→    unpaid: LoanItem[];
+    26→    unpaidCount: number;
+    27→    unpaidTotal: number;
+    28→  };
+    29→}
+    30→
+    31→type Tab = "overview" | "pricing" | "points" | "loans";
+    32→
+    33→export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: () => void; onOpenAbout?: () => void }) {
+    34→  const [tab, setTab] = useState<Tab>("overview");
+    35→  const [data, setData] = useState<AdminData | null>(null);
+    36→
+    37→  const load = useCallback(() => {
+    38→    api<AdminData>(`/api/umi/admin?userId=${me.id}`)
+    39→      .then(setData)
+    40→      .catch(() => {});
+    41→  }, [me.id]);
+    42→  useEffect(load, [load]);
+    43→
+    44→  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    45→    { key: "overview", label: "نظرة عامة", icon: <Users className="w-4 h-4" /> },
+    46→    { key: "pricing", label: "تسعير الصرف", icon: <Globe className="w-4 h-4" /> },
+    47→    { key: "points", label: "نقاط أومي", icon: <Coins className="w-4 h-4" /> },
+    48→    { key: "loans", label: "القروض", icon: <Landmark className="w-4 h-4" /> },
+    49→  ];
+    50→
+    51→  return (
+    52→    <div className="min-h-[100dvh] flex flex-col bg-umi-bg">
+    53→      <StatusBar />
+    54→      <header className="flex items-center gap-3 px-5 pt-2 pb-3">
+    55→        <span className="w-11 h-11 rounded-2xl bg-white/5 border border-umi-gold/30 grid place-items-center text-xl">{me.avatar}</span>
+    56→        <div className="flex-1 min-w-0">
+    57→          <p className="text-[10px] font-tajawal text-umi-muted">لوحة أدمن المحفظة</p>
+    58→          <p className="font-cairo font-bold text-[15px] text-umi-cream truncate">{me.name}</p>
+    59→        </div>
+    60→        {onOpenAbout && (
+    61→          <button
+    62→            type="button"
+    63→            onClick={onOpenAbout}
+    64→            aria-label="من نحن"
+    65→            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 grid place-items-center text-umi-gold"
+    66→          >
+    67→            <Info className="w-4 h-4" />
+    68→          </button>
+    69→        )}
+    70→        <button
+    71→          type="button"
+    72→          onClick={onLogout}
+    73→          aria-label="خروج"
+    74→          className="w-9 h-9 rounded-full bg-white/5 border border-white/10 grid place-items-center text-umi-red"
+    75→        >
+    76→          <LogOut className="w-4 h-4" />
+    77→        </button>
+    78→      </header>
+    79→
+    80→      <div className="flex gap-1.5 px-4 pb-2.5 overflow-x-auto no-scrollbar">
+    81→        {tabs.map((t) => (
+    82→          <button
+    83→            key={t.key}
+    84→            type="button"
+    85→            onClick={() => setTab(t.key)}
+    86→            className={`h-8 px-3 rounded-full text-[10.5px] font-tajawal font-bold whitespace-nowrap flex items-center gap-1 transition-colors ${
+    87→              tab === t.key ? "text-[#0a0416]" : "text-umi-muted umi-card"
+    88→            }`}
+    89→            style={tab === t.key ? { background: "linear-gradient(135deg,#f5dfa0,#e8c766)" } : undefined}
+    90→          >
+    91→            {t.icon} {t.label}
+    92→          </button>
+    93→        ))}
+    94→      </div>
+    95→
+    96→      <div className="flex-1 overflow-y-auto umi-scroll pb-6">
+    97→        {tab === "overview" && <OverviewTab data={data} />}
+    98→        {tab === "pricing" && <PricingTab me={me} data={data} reload={load} />}
+    99→        {tab === "points" && <PointsTab me={me} data={data} reload={load} />}
+   100→        {tab === "loans" && <LoansTab me={me} data={data} reload={load} />}
+   101→      </div>
+   102→    </div>
+   103→  );
+   104→}
+   105→
+   106→/* ==== نظرة عامة ==== */
+   107→function OverviewTab({ data }: { data: AdminData | null }) {
+   108→  const { rates } = useRates();
+   109→  if (!data) return <p className="text-center text-umi-muted text-[11px] font-tajawal pt-10 animate-pulse">جارٍ التحميل…</p>;
+   110→  const cards = [
+   111→    { label: "المستخدمون", value: String(data.stats.users), icon: <Users className="w-4 h-4" />, color: "#e8c766" },
+   112→    { label: "المتاجر", value: String(data.stats.merchants), icon: <Store className="w-4 h-4" />, color: "#b8a4e8" },
+   113→    { label: "المعاملات", value: String(data.stats.txs), icon: <ArrowLeftRight className="w-4 h-4" />, color: "#6fb5a3" },
+   114→    { label: "نقاط أومي المتداولة", value: fmtPoints(data.stats.pointsTotal), icon: <Coins className="w-4 h-4" />, color: "#e8c766" },
+   115→  ];
+   116→  return (
+   117→    <div className="px-4 space-y-2.5">
+   118→      <div className="grid grid-cols-2 gap-2.5">
+   119→        {cards.map((c) => (
+   120→          <div key={c.label} className="rounded-2xl umi-card p-3.5">
+   121→            <span className="w-8 h-8 rounded-xl grid place-items-center mb-2" style={{ background: `${c.color}18`, color: c.color }}>
+   122→              {c.icon}
+   123→            </span>
+   124→            <p className="font-cairo font-black text-xl text-umi-cream" dir="ltr">{c.value}</p>
+   125→            <p className="text-[9.5px] font-tajawal text-umi-muted">{c.label}</p>
+   126→          </div>
+   127→        ))}
+   128→      </div>
+   129→
+   130→      <div className="rounded-2xl umi-card p-4">
+   131→        <p className="text-[10px] font-tajawal text-umi-muted mb-1">إجمالي أرصدة المحافظ</p>
+   132→        <p className="font-cairo font-black text-[22px] gold-text" dir="ltr">
+   133→          {fmtSyp(data.stats.balances)} <span className="text-[11px] font-tajawal text-umi-muted">{SYP_UNIT}</span>
+   134→        </p>
+   135→        <p className="text-[10px] font-tajawal text-umi-teal" dir="ltr">≈ {fmtUsd(sypToUsd(data.stats.balances, rates.usdSyp))}</p>
+   136→        <div className="umi-shimmer-line my-3" />
+   137→        <p className="text-[10px] font-tajawal text-umi-muted mb-1">حجم التداول الكلي</p>
+   138→        <p className="font-cairo font-bold text-[16px] text-umi-cream" dir="ltr">
+   139→          {fmtSyp(data.stats.volume)} <span className="text-[10px] font-tajawal text-umi-muted">{SYP_UNIT}</span>
+   140→        </p>
+   141→        <p className="text-[9.5px] font-tajawal text-umi-muted mt-1">
+   142→          آخر تحديث للتسعير: {relTime(data.settings.updatedAt)}
+   143→        </p>
+   144→      </div>
+   145→
+   146→      {(data.loans.unpaidCount > 0 || data.loans.pending.length > 0) && (
+   147→        <div className="rounded-2xl p-4" style={{ border: "1px solid rgba(200,123,123,0.35)", background: "rgba(200,123,123,0.07)" }}>
+   148→          <p className="flex items-center gap-1.5 text-[11px] font-tajawal font-bold text-umi-red mb-1">
+   149→            <HandCoins className="w-4 h-4" /> تنبيه القروض
+   150→          </p>
+   151→          <p className="text-[10.5px] font-tajawal text-umi-cream leading-relaxed">
+   152→            {data.loans.pending.length > 0 && `${data.loans.pending.length} طلب بانتظار الموافقة · `}
+   153→            {data.loans.unpaidCount} قرض غير مسدد — المتبقي {fmtSyp(data.loans.unpaidTotal)} {SYP_UNIT}
+   154→          </p>
+   155→        </div>
+   156→      )}
+   157→    </div>
+   158→  );
+   159→}
+   160→
+   161→/* ==== تسعير الصرف ==== */
+   162→function PricingTab({ me, data, reload }: { me: Me; data: AdminData | null; reload: () => void }) {
+   163→  const { rates } = useRates();
+   164→  const [usd, setUsd] = useState("");
+   165→  const [point, setPoint] = useState("");
+   166→  const [msg, setMsg] = useState("");
+   167→  const [err, setErr] = useState("");
+   168→  const [busy, setBusy] = useState(false);
+   169→  const [syncing, setSyncing] = useState(false);
+   170→  const [syncData, setSyncData] = useState<{ fetched: number; current: number; source: string; sourceTime: string | null } | null>(null);
+   171→
+   172→  useEffect(() => {
+   173→    if (data) { setUsd(String(Math.round(data.settings.usdSyp))); setPoint(String(Math.round(data.settings.pointSyp))); }
+   174→  }, [data]);
+   175→
+   176→  const save = async () => {
+   177→    setBusy(true); setErr(""); setMsg("");
+   178→    try {
+   179→      await api("/api/umi/admin", {
+   180→        method: "PUT",
+   181→        body: JSON.stringify({ userId: me.id, usdSyp: Number(usd), pointSyp: Number(point) }),
+   182→      });
+   183→      setMsg("تم حفظ التسعير ✓");
+   184→      reload();
+   185→    } catch (e) {
+   186→      setErr((e as Error).message);
+   187→    } finally {
+   188→      setBusy(false);
+   189→    }
+   190→  };
+   191→
+   192→  const fetchFromSource = async () => {
+   193→    setSyncing(true); setErr(""); setMsg(""); setSyncData(null);
+   194→    try {
+   195→      const r = await api<{ fetched: number; current: number; source: string; sourceTime: string | null }>("/api/umi/admin/sync-rate", {
+   196→        method: "POST",
+   197→        body: JSON.stringify({ adminId: me.id }),
+   198→      });
+   199→      setSyncData(r);
+   200→    } catch (e) {
+   201→      setErr((e as Error).message);
+   202→    } finally {
+   203→      setSyncing(false);
+   204→    }
+   205→  };
+   206→
+   207→  const applyFetched = async (rate: number) => {
+   208→    setSyncing(true); setErr(""); setMsg("");
+   209→    try {
+   210→      await api("/api/umi/admin/sync-rate", {
+   211→        method: "POST",
+   212→        body: JSON.stringify({ adminId: me.id, apply: true, rate }),
+   213→      });
+   214→      setUsd(String(rate));
+   215→      setMsg(`تم تطبيق السعر المجلوب: $1 = ${fmtSyp(rate)} ${SYP_UNIT} ✓`);
+   216→      setSyncData(null);
+   217→      reload();
+   218→    } catch (e) {
+   219→      setErr((e as Error).message);
+   220→    } finally {
+   221→      setSyncing(false);
+   222→    }
+   223→  };
+   224→
+   225→  const usdPresets = [11000, 12500, 13000, 15000];
+   226→  const pointPresets = [5, 10, 25, 50];
+   227→
+   228→  return (
+   229→    <div className="px-4 space-y-3">
+   230→      {/* سعر الدولار */}
+   231→      <div className="rounded-2xl umi-card p-4">
+   232→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-1">
+   233→          <Globe className="w-4 h-4 text-umi-gold" /> سعر الدولار مقابل الليرة
+   234→        </p>
+   235→        <p className="text-[10px] font-tajawal text-umi-muted mb-3 leading-relaxed">
+   236→          يُستخدم لحساب مكافئ الدولار "≈ $" تحت كل رصيد — يمكنك الإدخال اليدوي أو المزامنة من مصدر موثوق
+   237→        </p>
+   238→
+   239→        <button
+   240→          type="button"
+   241→          onClick={fetchFromSource}
+   242→          disabled={syncing}
+   243→          className="w-full h-11 rounded-xl font-cairo font-extrabold text-[12.5px] text-umi-cream flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50"
+   244→          style={{ background: "linear-gradient(135deg,#3a2a5e,#2a1c48)", border: "1px solid rgba(232,199,102,0.35)" }}
+   245→        >
+   246→          <RefreshCw className={`w-4 h-4 text-umi-gold ${syncing ? "animate-spin" : ""}`} />
+   247→          {syncing ? "جارٍ الجلب من المصدر الموثوق…" : "جلب سعر الصرف من مصدر موثوق"}
+   248→        </button>
+   249→
+   250→        {/* مقارنة السعر المجلوب بالحالي — التطبيق بقرار الأدمن */}
+   251→        {syncData && (
+   252→          <div className="mt-3 rounded-xl p-3" style={{ border: "1px solid rgba(111,181,163,0.35)", background: "rgba(111,181,163,0.07)" }}>
+   253→            <p className="text-[10.5px] font-tajawal text-umi-teal font-bold mb-1">
+   254→              المصدر: {syncData.source} {syncData.sourceTime ? `· آخر تحديث: ${syncData.sourceTime.slice(5, 16)}` : ""}
+   255→            </p>
+   256→            <div className="flex items-center justify-between text-[11px] font-tajawal text-umi-cream" dir="ltr">
+   257→              <span>المجلوب: <b className="text-umi-gold">${syncData.fetched.toLocaleString("en-US")}</b></span>
+   258→              <span>الحالي: {syncData.current.toLocaleString("en-US")}</span>
+   259→            </div>
+   260→            {syncData.fetched !== Math.round(syncData.current) && (
+   261→              <p className="text-[9.5px] font-tajawal text-umi-muted mt-1.5 leading-relaxed">
+   262→                تنبيه: المصدر يعطي السعر الرسمي وقد يختلف كثيراً عن سعر السوق لديك — طبّقه فقط إذا كان مناسباً
+   263→              </p>
+   264→            )}
+   265→            <div className="flex gap-2 mt-2.5">
+   266→              <button
+   267→                type="button"
+   268→                onClick={() => applyFetched(syncData.fetched)}
+   269→                className="flex-1 h-9 rounded-lg font-tajawal font-bold text-[11px] text-[#0a0416]"
+   270→                style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+   271→              >
+   272→                تطبيق السعر المجلوب
+   273→              </button>
+   274→              <button
+   275→                type="button"
+   276→                onClick={() => setSyncData(null)}
+   277→                className="flex-1 h-9 rounded-lg font-tajawal font-bold text-[11px] text-umi-muted umi-card"
+   278→              >
+   279→                إبقاء السعر الحالي
+   280→              </button>
+   281→            </div>
+   282→          </div>
+   283→        )}
+   284→
+   285→        <div className="umi-shimmer-line my-3.5" />
+   286→
+   287→        <div className="flex gap-2 mb-2">
+   288→          {usdPresets.map((p) => (
+   289→            <button
+   290→              key={p}
+   291→              type="button"
+   292→              onClick={() => setUsd(String(p))}
+   293→              className="flex-1 h-8 rounded-lg umi-card text-[10px] font-tajawal font-bold text-umi-cream active:bg-white/10"
+   294→              dir="ltr"
+   295→            >
+   296→              {p.toLocaleString("en-US")}
+   297→            </button>
+   298→          ))}
+   299→        </div>
+   300→        <label className="text-[10.5px] font-tajawal font-bold text-umi-muted block mb-1">إدخال يدوي — $1 = ؟ ل.س</label>
+   301→        <input
+   302→          value={usd}
+   303→          onChange={(e) => setUsd(e.target.value.replace(/\D/g, "").slice(0, 8))}
+   304→          inputMode="numeric"
+   305→          dir="ltr"
+   306→          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream outline-none focus:border-umi-gold/40"
+   307→        />
+   308→        <p className="text-[9.5px] font-tajawal text-umi-muted mt-2 text-center" dir="ltr">
+   309→          100,000 {SYP_UNIT} ≈ {fmtUsd(sypToUsd(100000, Number(usd) || rates.usdSyp))}
+   310→        </p>
+   311→      </div>
+   312→
+   313→      {/* قيمة نقطة أومي */}
+   314→      <div className="rounded-2xl umi-card p-4">
+   315→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-1">
+   316→          <Coins className="w-4 h-4 text-umi-gold" /> قيمة نقطة أومي
+   317→        </p>
+   318→        <p className="text-[10px] font-tajawal text-umi-muted mb-3 leading-relaxed">
+   319→          النقاط محفظة مكافآت تُمنح من الإدارة فقط — لا بيع ولا شراء. القيمة هنا للعرض وحساب المكافئ بالليرة
+   320→        </p>
+   321→        <div className="flex gap-2 mb-2">
+   322→          {pointPresets.map((p) => (
+   323→            <button
+   324→              key={p}
+   325→              type="button"
+   326→              onClick={() => setPoint(String(p))}
+   327→              className="flex-1 h-8 rounded-lg umi-card text-[10px] font-tajawal font-bold text-umi-cream active:bg-white/10"
+   328→              dir="ltr"
+   329→            >
+   330→              {p}
+   331→            </button>
+   332→          ))}
+   333→        </div>
+   334→        <label className="text-[10.5px] font-tajawal font-bold text-umi-muted block mb-1">قيمة النقطة الواحدة — ل.س</label>
+   335→        <input
+   336→          value={point}
+   337→          onChange={(e) => setPoint(e.target.value.replace(/\D/g, "").slice(0, 7))}
+   338→          inputMode="numeric"
+   339→          dir="ltr"
+   340→          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream outline-none focus:border-umi-gold/40"
+   341→        />
+   342→        <p className="text-[9.5px] font-tajawal text-umi-muted mt-2 text-center">
+   343→          100 نقطة ≈ {fmtSyp(pointsToSyp(100, Number(point) || rates.pointSyp))} {SYP_UNIT}
+   344→        </p>
+   345→      </div>
+   346→
+   347→      {err && <p className="text-[11px] font-tajawal text-umi-red text-center">{err}</p>}
+   348→      {msg && <p className="text-[11px] font-tajawal text-umi-teal text-center">{msg}</p>}
+   349→      <button
+   350→        type="button"
+   351→        disabled={busy}
+   352→        onClick={save}
+   353→        className="w-full h-11 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+   354→        style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
+   355→      >
+   356→        <Save className="w-4 h-4" /> {busy ? "جارٍ الحفظ…" : "حفظ التسعير"}
+   357→      </button>
+   358→    </div>
+   359→  );
+   360→}
+   361→
+   362→/* ==== نقاط أومي ==== */
+   363→function PointsTab({ me, data, reload }: { me: Me; data: AdminData | null; reload: () => void }) {
+   364→  const { rates } = useRates();
+   365→  const [phone, setPhone] = useState("");
+   366→  const [points, setPoints] = useState("");
+   367→  const [note, setNote] = useState("");
+   368→  const [msg, setMsg] = useState("");
+   369→  const [err, setErr] = useState("");
+   370→  const [busy, setBusy] = useState(false);
+   371→
+   372→  const grant = async () => {
+   373→    setBusy(true); setErr(""); setMsg("");
+   374→    try {
+   375→      const r = await api<{ granted: number; userName: string; totalPoints: number }>("/api/umi/admin/points", {
+   376→        method: "POST",
+   377→        body: JSON.stringify({ adminId: me.id, phone: phone.trim(), points: Number(points), note }),
+   378→      });
+   379→      setMsg(`منحت ${fmtPoints(r.granted)} نقطة لـ ${r.userName} — رصيده الآن ${fmtPoints(r.totalPoints)} نقطة ✓`);
+   380→      setPhone(""); setPoints(""); setNote("");
+   381→      reload();
+   382→    } catch (e) {
+   383→      setErr((e as Error).message);
+   384→    } finally {
+   385→      setBusy(false);
+   386→    }
+   387→  };
+   388→
+   389→  return (
+   390→    <div className="px-4 space-y-3">
+   391→      <div className="rounded-2xl umi-card p-4">
+   392→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-1">
+   393→          <CoinIcon className="w-4.5 h-4.5" /> منح نقاط أومي
+   394→        </p>
+   395→        <p className="text-[10px] font-tajawal text-umi-muted mb-3 leading-relaxed">
+   396→          النقاط تُمنح مجاناً من الإدارة كمكافآت — لا يمكن شراؤها أو بيعها من داخل المحفظة
+   397→        </p>
+   398→        <label className="text-[10.5px] font-tajawal font-bold text-umi-muted block mb-1">رقم جوال المستخدم</label>
+   399→        <input
+   400→          value={phone}
+   401→          onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
+   402→          inputMode="tel"
+   403→          dir="ltr"
+   404→          placeholder="7782416"
+   405→          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-left font-cairo text-[13px] text-umi-cream placeholder:text-umi-muted/50 outline-none focus:border-umi-gold/40 mb-2.5"
+   406→        />
+   407→        <div className="flex gap-2 mb-2.5">
+   408→          {[50, 100, 250, 1000].map((p) => (
+   409→            <button
+   410→              key={p}
+   411→              type="button"
+   412→              onClick={() => setPoints(String(p))}
+   413→              className="flex-1 h-8 rounded-lg umi-card text-[10px] font-tajawal font-bold text-umi-gold active:bg-white/10"
+   414→              dir="ltr"
+   415→            >
+   416→              +{p}
+   417→            </button>
+   418→          ))}
+   419→        </div>
+   420→        <label className="text-[10.5px] font-tajawal font-bold text-umi-muted block mb-1">عدد النقاط</label>
+   421→        <input
+   422→          value={points}
+   423→          onChange={(e) => setPoints(e.target.value.replace(/\D/g, "").slice(0, 7))}
+   424→          inputMode="numeric"
+   425→          dir="ltr"
+   426→          placeholder="0"
+   427→          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream placeholder:text-umi-muted/50 outline-none focus:border-umi-gold/40 mb-2.5"
+   428→        />
+   429→        <label className="text-[10.5px] font-tajawal font-bold text-umi-muted block mb-1">سبب المنح (اختياري)</label>
+   430→        <input
+   431→          value={note}
+   432→          onChange={(e) => setNote(e.target.value)}
+   433→          placeholder="مثال: مكافأة ولاء"
+   434→          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 font-cairo text-[12px] text-umi-cream placeholder:text-umi-muted/50 outline-none focus:border-umi-gold/40"
+   435→        />
+   436→        {err && <p className="text-[11px] font-tajawal text-umi-red mt-2 text-center">{err}</p>}
+   437→        {msg && <p className="text-[11px] font-tajawal text-umi-teal mt-2 text-center">{msg}</p>}
+   438→        <button
+   439→          type="button"
+   440→          disabled={busy || !phone || !Number(points)}
+   441→          onClick={grant}
+   442→          className="w-full h-11 mt-3 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
+   443→          style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
+   444→        >
+   445→          {busy ? "جارٍ المنح…" : "منح النقاط"}
+   446→        </button>
+   447→      </div>
+   448→
+   449→      {/* حاملو النقاط */}
+   450→      <div className="rounded-2xl umi-card p-4">
+   451→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-2.5">
+   452→          <Coins className="w-4 h-4 text-umi-gold" /> حاملو النقاط
+   453→          {data && <span className="text-[9.5px] font-tajawal text-umi-muted">({fmtPoints(data.stats.pointsTotal)} نقطة متداولة)</span>}
+   454→        </p>
+   455→        {data?.pointsHolders.length === 0 && <p className="text-[10px] font-tajawal text-umi-muted text-center py-3">لا يوجد حاملو نقاط بعد</p>}
+   456→        {data?.pointsHolders.map((h) => (
+   457→          <div key={h.phone} className="flex items-center gap-2.5 py-2 border-b border-white/5 last:border-0">
+   458→            <span className="w-8 h-8 rounded-xl bg-white/5 grid place-items-center text-sm">{h.avatar}</span>
+   459→            <div className="flex-1 min-w-0">
+   460→              <p className="text-[11px] font-tajawal font-bold text-umi-cream truncate">{h.name}</p>
+   461→              <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">{h.phone}</p>
+   462→            </div>
+   463→            <div className="text-left shrink-0">
+   464→              <p className="font-cairo font-bold text-[13px] gold-text" dir="ltr">{fmtPoints(h.points)}</p>
+   465→              <p className="text-[8.5px] font-tajawal text-umi-muted" dir="ltr">≈ {fmtSyp(pointsToSyp(h.points, rates.pointSyp))} {SYP_UNIT}</p>
+   466→            </div>
+   467→          </div>
+   468→        ))}
+   469→      </div>
+   470→    </div>
+   471→  );
+   472→}
+   473→
+   474→/* ==== مراقبة القروض ==== */
+   475→function LoansTab({ me, data, reload }: { me: Me; data: AdminData | null; reload: () => void }) {
+   476→  const [msg, setMsg] = useState("");
+   477→  const [busyId, setBusyId] = useState<string | null>(null);
+   478→
+   479→  const decide = async (id: string, action: "approve" | "reject") => {
+   480→    setBusyId(id);
+   481→    setMsg("");
+   482→    try {
+   483→      await api("/api/umi/loans", {
+   484→        method: "PATCH",
+   485→        body: JSON.stringify({ id, action, adminId: me.id }),
+   486→      });
+   487→      setMsg(action === "approve" ? "تم قبول الطلب وشحن الرصيد ✓" : "تم رفض الطلب");
+   488→      reload();
+   489→    } catch (e) {
+   490→      setMsg((e as Error).message);
+   491→    } finally {
+   492→      setBusyId(null);
+   493→    }
+   494→  };
+   495→
+   496→  if (!data) return <p className="text-center text-umi-muted text-[11px] font-tajawal pt-10 animate-pulse">جارٍ التحميل…</p>;
+   497→
+   498→  return (
+   499→    <div className="px-4 space-y-3">
+   500→      {msg && <p className="text-[11px] font-tajawal text-umi-teal text-center">{msg}</p>}
+   501→
+   502→      {/* طلبات بانتظار الموافقة */}
+   503→      <div>
+   504→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-2">
+   505→          <Clock className="w-4 h-4 text-umi-gold" /> طلبات بانتظار الموافقة ({data.loans.pending.length})
+   506→        </p>
+   507→        {data.loans.pending.length === 0 && (
+   508→          <p className="text-[10px] font-tajawal text-umi-muted umi-card rounded-xl p-3 text-center">لا توجد طلبات جديدة</p>
+   509→        )}
+   510→        <div className="space-y-2">
+   511→          {data.loans.pending.map((l) => (
+   512→            <div key={l.id} className="rounded-2xl umi-card p-3.5">
+   513→              <div className="flex items-center gap-2.5">
+   514→                <span className="w-9 h-9 rounded-xl bg-white/5 grid place-items-center text-base">{l.userAvatar}</span>
+   515→                <div className="flex-1 min-w-0">
+   516→                  <p className="text-[12px] font-tajawal font-bold text-umi-cream truncate">{l.userName}</p>
+   517→                  <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">{l.userPhone}</p>
+   518→                </div>
+   519→                <p className="font-cairo font-black text-[15px] gold-text shrink-0" dir="ltr">
+   520→                  {fmtSyp(l.amount)} <span className="text-[8px] font-tajawal text-umi-muted">{SYP_UNIT}</span>
+   521→                </p>
+   522→              </div>
+   523→              {l.note && <p className="text-[9.5px] font-tajawal text-umi-muted mt-1.5">سبب: {l.note}</p>}
+   524→              <p className="text-[9px] font-tajawal text-umi-muted mt-0.5">{relTime(l.createdAt)}</p>
+   525→              <div className="flex gap-2 mt-2.5">
+   526→                <button
+   527→                  type="button"
+   528→                  disabled={busyId === l.id}
+   529→                  onClick={() => decide(l.id, "approve")}
+   530→                  className="flex-1 h-9 rounded-xl font-tajawal font-bold text-[11px] text-[#0a0416] flex items-center justify-center gap-1 disabled:opacity-40"
+   531→                  style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+   532→                >
+   533→                  <Check className="w-3.5 h-3.5" /> قبول وشحن الرصيد
+   534→                </button>
+   535→                <button
+   536→                  type="button"
+   537→                  disabled={busyId === l.id}
+   538→                  onClick={() => decide(l.id, "reject")}
+   539→                  className="flex-1 h-9 rounded-xl font-tajawal font-bold text-[11px] text-umi-red umi-card flex items-center justify-center gap-1 disabled:opacity-40"
+   540→                >
+   541→                  <X className="w-3.5 h-3.5" /> رفض
+   542→                </button>
+   543→              </div>
+   544→            </div>
+   545→          ))}
+   546→        </div>
+   547→      </div>
+   548→
+   549→      {/* غير المسددة */}
+   550→      <div>
+   551→        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-2">
+   552→          <Wallet className="w-4 h-4 text-umi-red" /> قروض غير مسددة ({data.loans.unpaidCount})
+   553→        </p>
+   554→        {data.loans.unpaid.length > 0 && (
+   555→          <div className="rounded-2xl p-3.5 mb-2" style={{ border: "1px solid rgba(200,123,123,0.35)", background: "rgba(200,123,123,0.07)" }}>
+   556→            <p className="text-[10px] font-tajawal text-umi-muted">إجمالي المتبقي على الجميع</p>
+   557→            <p className="font-cairo font-black text-xl text-umi-red" dir="ltr">
+   558→              {fmtSyp(data.loans.unpaidTotal)} <span className="text-[10px] font-tajawal text-umi-muted">{SYP_UNIT}</span>
+   559→            </p>
+   560→          </div>
+   561→        )}
+   562→        {data.loans.unpaid.length === 0 && (
+   563→          <p className="text-[10px] font-tajawal text-umi-muted umi-card rounded-xl p-3 text-center">لا توجد قروض غير مسددة ✓</p>
+   564→        )}
+   565→        <div className="space-y-2">
+   566→          {data.loans.unpaid.map((l) => (
+   567→            <div key={l.id} className="rounded-2xl umi-card p-3.5">
+   568→              <div className="flex items-center gap-2.5">
+   569→                <span className="w-9 h-9 rounded-xl bg-white/5 grid place-items-center text-base">{l.userAvatar}</span>
+   570→                <div className="flex-1 min-w-0">
+   571→                  <p className="text-[12px] font-tajawal font-bold text-umi-cream truncate">{l.userName}</p>
+   572→                  <p className="text-[9px] font-tajawal text-umi-muted" dir="ltr">{l.userPhone}</p>
+   573→                </div>
+   574→                <div className="text-left shrink-0">
+   575→                  <p className="font-cairo font-bold text-[13px] text-umi-red" dir="ltr">
+   576→                    {fmtSyp(l.remaining)} <span className="text-[8px] font-tajawal text-umi-muted">متبقي</span>
+   577→                  </p>
+   578→                  <p className="text-[8.5px] font-tajawal text-umi-muted" dir="ltr">
+   579→                    من {fmtSyp(l.amount)} · سُدّد {fmtSyp(l.paidAmount)}
+   580→                  </p>
+   581→                </div>
+   582→              </div>
+   583→              <div className="h-1.5 rounded-full bg-white/5 mt-2 overflow-hidden">
+   584→                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((l.paidAmount / l.amount) * 100))}%`, background: "linear-gradient(90deg,#c99b3f,#f5dfa0)" }} />
+   585→              </div>
+   586→            </div>
+   587→          ))}
+   588→        </div>
+   589→      </div>
+   590→    </div>
+   591→  );
+   592→}
+   593→

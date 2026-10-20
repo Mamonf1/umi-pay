@@ -4,6 +4,7 @@
 // PATCH {id, action}      → approve/reject (أدمن) أو repay (المستخدم — جزئي أو كامل)
 import { db } from "@/lib/db";
 import { fail, ok, r2, genRef } from "@/lib/umi-server";
+import { loanTotalDue } from "@/lib/fund";
 
 const MIN_LOAN = 25000;
 
@@ -11,6 +12,7 @@ function mapLoan(l: {
   id: string;
   amount: number;
   paidAmount: number;
+  feesAccrued: number;
   currency: string;
   status: string;
   note: string | null;
@@ -22,7 +24,8 @@ function mapLoan(l: {
     id: l.id,
     amount: l.amount,
     paidAmount: l.paidAmount,
-    remaining: r2(l.amount - l.paidAmount),
+    feesAccrued: l.feesAccrued,
+    remaining: loanTotalDue(l.amount, l.paidAmount, l.feesAccrued),
     currency: l.currency,
     status: l.status as "pending" | "approved" | "rejected" | "paid",
     note: l.note,
@@ -162,7 +165,7 @@ export async function PATCH(req: Request) {
       if (String(pin ?? "") !== (await db.user.findUnique({ where: { id: loan.userId } }))?.pin)
         return fail("رمز الدفع غير صحيح");
 
-      const remaining = r2(loan.amount - loan.paidAmount);
+      const remaining = loanTotalDue(loan.amount, loan.paidAmount, loan.feesAccrued);
       const requested = amount === undefined || amount === null ? remaining : r2(Number(amount));
       if (!requested || requested <= 0) return fail("أدخل مبلغ سداد صحيح");
       if (requested > remaining) return fail(`المتبقي على القرض ${remaining.toLocaleString("en-US")} ل.س فقط`);
@@ -172,7 +175,7 @@ export async function PATCH(req: Request) {
         return fail("الرصيد غير كافٍ للسداد — اشحن محفظتك أولاً");
 
       const newPaid = r2(loan.paidAmount + requested);
-      const fullyPaid = newPaid >= loan.amount;
+      const fullyPaid = newPaid >= r2(loan.amount + loan.feesAccrued);
       const reference = genRef();
 
       await db.$transaction([

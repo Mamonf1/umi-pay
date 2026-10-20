@@ -53,6 +53,7 @@ export interface LoanItem {
   id: string;
   amount: number;
   paidAmount: number;
+  feesAccrued: number;
   remaining: number;
   currency: string;
   status: "pending" | "approved" | "rejected" | "paid";

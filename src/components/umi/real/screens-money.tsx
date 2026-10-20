@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowDownLeft, HandCoins, ShieldCheck, Clock, CheckCheck, XCircle,
-  Wallet, Landmark, BadgeCheck,
+  Wallet, Landmark, BadgeCheck, Hourglass,
 } from "lucide-react";
 import { StatusBar } from "@/components/umi/shell";
 import {
@@ -16,8 +16,6 @@ import { fmtSyp, usdLine, SYP_UNIT } from "@/lib/currency";
 import {
   relTime, type Contact, type Me, type LoanItem, type LoansData,
 } from "@/lib/umi-types";
-
-const MIN_TOPUP = 25000;
 
 /* ============ شاشة التحويل ============ */
 export function SendScreen({ me, onDone, onExit }: { me: Me; onDone: () => void; onExit: () => void }) {
@@ -138,73 +136,61 @@ export function SendScreen({ me, onDone, onExit }: { me: Me; onDone: () => void;
   );
 }
 
-/* ============ شاشة شحن المحفظة (ورقة سفلية) ============ */
-export function TopUpSheet({ me, onClose, onDone }: { me: Me; onClose: () => void; onDone: () => void }) {
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"mada" | "applepay" | "card">("mada");
-  const [stage, setStage] = useState<"amount" | "processing" | "success">("amount");
-  const [res, setRes] = useState<{ reference: string; amount: number } | null>(null);
-  const [err, setErr] = useState("");
-
-  const methods = [
-    { key: "mada" as const, label: "بطاقة مدى", emoji: "💳" },
-    { key: "applepay" as const, label: "Apple Pay", emoji: "" },
-    { key: "card" as const, label: "بطاقة ائتمانية", emoji: "🏦" },
+/* ============ شاشة شحن المحفظة (ورقة سفلية) — كل الخيارات قيد التطوير ============
+   بناءً على قرار الإدارة: أُلغيت خيارات الشحن السابقة (مدى / Apple Pay / بطاقة ائتمانية)،
+   وسيُطلق قريباً الشحن عبر «نقدي شام كاش» و«عملة مشفرة» */
+export function TopUpSheet({ onClose }: { me: Me; onClose: () => void; onDone: () => void }) {
+  const options = [
+    { key: "shamcash", label: "نقدي — شام كاش", desc: "إيداع نقدي عبر محفظة شام كاش", emoji: "💵" },
+    { key: "crypto", label: "عملة مشفرة", desc: "USDT · BTC — إيداع بالعملات الرقمية", emoji: "🪙" },
   ];
-
-  const submit = async () => {
-    setStage("processing");
-    setErr("");
-    try {
-      const r = await api<{ reference: string; amount: number }>("/api/umi/topup", {
-        method: "POST",
-        body: JSON.stringify({ userId: me.id, amount: Number(amount), method }),
-      });
-      setRes(r);
-      setStage("success");
-    } catch (e) {
-      setErr((e as Error).message);
-      setStage("amount");
-    }
-  };
 
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
-      <ScreenHeader title="شحن المحفظة" subtitle={`أقل مبلغ ${MIN_TOPUP.toLocaleString("en-US")} ${SYP_UNIT}`} onBack={stage === "amount" ? onClose : undefined} />
-      {stage === "amount" && (
-        <div className="flex-1 overflow-y-auto umi-scroll pb-6">
-          <AmountPad value={amount} onChange={setAmount} hint={`رصيدك الحالي: ${fmtSyp(me.balance)} ${SYP_UNIT}`} />
-          <div className="px-4 mt-3">
-            <div className="grid grid-cols-3 gap-2">
-              {methods.map((m) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  onClick={() => setMethod(m.key)}
-                  className={`rounded-2xl px-2 py-3 umi-card text-center transition-colors ${method === m.key ? "border-umi-gold/50" : ""}`}
-                >
-                  <span className="text-lg block mb-1">{m.emoji}</span>
-                  <span className="text-[9.5px] font-tajawal font-bold text-umi-cream block leading-tight">{m.label}</span>
-                </button>
-              ))}
-            </div>
-            {err && <p className="text-[11px] font-tajawal text-umi-red mt-2 text-center">{err}</p>}
-            <button
-              type="button"
-              disabled={Number(amount) < MIN_TOPUP}
-              onClick={submit}
-              className="w-full h-11 mt-3 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
-              style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
-            >
-              شحن المحفظة
-            </button>
-          </div>
+      <ScreenHeader title="شحن المحفظة" subtitle="الشحن داخل التطبيق قيد التطوير حالياً" onBack={onClose} />
+      <div className="flex-1 overflow-y-auto umi-scroll pb-6 px-4">
+        {/* بطاقة الإعلان */}
+        <div className="rounded-[22px] umi-hero p-5 relative overflow-hidden text-center">
+          <div className="umi-shimmer-line absolute top-0 inset-x-0" />
+          <span className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-3" style={{ background: "rgba(232,199,102,0.12)", border: "1px solid rgba(232,199,102,0.35)" }}>
+            <Hourglass className="w-7 h-7 text-umi-gold" />
+          </span>
+          <p className="font-cairo font-black text-[16px] text-umi-cream mb-1">الشحن يتجدد قريباً</p>
+          <p className="text-[10.5px] font-tajawal text-umi-muted leading-relaxed">
+            أُلغيت جميع خيارات الشحن السابقة (بطاقة مدى · Apple Pay · البطاقات الائتمانية)،
+            وسيُفعّل الشحن عبر الطريقتين الجديدتين بعد استكمال التطوير
+          </p>
         </div>
-      )}
-      {stage === "processing" && <ProcessingView label="جارٍ شحن المحفظة" />}
-      {stage === "success" && res && (
-        <SuccessView title="تم شحن المحفظة" amount={res.amount} reference={res.reference} onDone={() => { onDone(); }} />
-      )}
+
+        {/* الخيارات الجديدة — تحت التطوير */}
+        <div className="mt-4 space-y-2.5">
+          {options.map((o) => (
+            <div key={o.key} className="rounded-2xl umi-card p-4 flex items-center gap-3 opacity-80" aria-disabled>
+              <span className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 grid place-items-center text-xl shrink-0">{o.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12.5px] font-tajawal font-bold text-umi-cream">{o.label}</p>
+                <p className="text-[9.5px] font-tajawal text-umi-muted mt-0.5">{o.desc}</p>
+              </div>
+              <span
+                className="shrink-0 h-7 px-2.5 rounded-full flex items-center gap-1 text-[9px] font-tajawal font-bold"
+                style={{ background: "rgba(232,199,102,0.1)", border: "1px solid rgba(232,199,102,0.4)", color: "#e8c766" }}
+              >
+                <Hourglass className="w-3 h-3" /> تحت التطوير
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* بديل مؤقت */}
+        <div className="rounded-2xl p-4 mt-4" style={{ border: "1px solid rgba(184,164,232,0.3)", background: "rgba(184,164,232,0.06)" }}>
+          <p className="flex items-center gap-1.5 text-[11px] font-tajawal font-bold text-umi-cream mb-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-umi-teal" /> للشحن الآن
+          </p>
+          <p className="text-[10px] font-tajawal text-umi-muted leading-relaxed">
+            تواصل مع أدمن المحفظة مباشرة لإيداع رصيد يدوي حتى إطلاق خيارات الشحن الجديدة
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -390,7 +376,8 @@ export function LoansScreen({ me, onChanged, onExit }: { me: Me; onChanged: () =
 function LoanRow({ loan, onRepay }: { loan: LoanItem; onRepay: () => void }) {
   const { rates } = useRates();
   const st = loanStatusView(loan.status);
-  const progress = loan.status === "paid" ? 100 : Math.min(100, Math.round((loan.paidAmount / loan.amount) * 100));
+  const totalDue = loan.amount + loan.feesAccrued;
+  const progress = loan.status === "paid" ? 100 : Math.min(100, Math.round((loan.paidAmount / totalDue) * 100));
   return (
     <div className="rounded-2xl umi-card p-3.5">
       <div className="flex items-center justify-between mb-1.5">
@@ -411,9 +398,16 @@ function LoanRow({ loan, onRepay }: { loan: LoanItem; onRepay: () => void }) {
             <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg,#c99b3f,#f5dfa0)" }} />
           </div>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-[10px] font-tajawal text-umi-muted">
-              سُدّد {fmtSyp(loan.paidAmount)} · المتبقي <b className="text-umi-red">{fmtSyp(loan.remaining)}</b> {SYP_UNIT}
-            </p>
+            <div>
+              <p className="text-[10px] font-tajawal text-umi-muted">
+                سُدّد {fmtSyp(loan.paidAmount)} · المتبقي <b className="text-umi-red">{fmtSyp(loan.remaining)}</b> {SYP_UNIT}
+              </p>
+              {loan.feesAccrued > 0 && (
+                <p className="text-[9px] font-tajawal mt-0.5" style={{ color: "#e8c766" }}>
+                  منها رسوم التطبيق: {fmtSyp(loan.feesAccrued)} {SYP_UNIT}
+                </p>
+              )}
+            </div>
             <button
               type="button"
               onClick={onRepay}

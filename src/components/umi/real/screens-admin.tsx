@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   LogOut, Users, Store, ArrowLeftRight, Coins, RefreshCw, Check, X,
   HandCoins, Landmark, Globe, Save, Clock, Wallet, Info,
+  PiggyBank, Percent, Hourglass, Plus, TrendingUp,
 } from "lucide-react";
 import { StatusBar } from "@/components/umi/shell";
 import { CoinIcon } from "@/components/umi/real/screens-main";
@@ -17,7 +18,7 @@ import type { LoanItem } from "@/lib/umi-types";
 
 interface AdminData {
   admin: { name: string; avatar: string };
-  settings: { usdSyp: number; pointSyp: number; updatedAt: string };
+  settings: { usdSyp: number; pointSyp: number; loanMonthlyRate: number; cardFeeRate: number; updatedAt: string };
   stats: { users: number; merchants: number; txs: number; volume: number; balances: number; pointsTotal: number };
   pointsHolders: { name: string; phone: string; avatar: string; points: number }[];
   loans: {
@@ -26,9 +27,16 @@ interface AdminData {
     unpaidCount: number;
     unpaidTotal: number;
   };
+  fund: {
+    total: number;
+    month: number;
+    byKind: { loan_fee: number; card_fee: number; manual: number };
+    dueCount: number;
+    dueTotal: number;
+  };
 }
 
-type Tab = "overview" | "pricing" | "points" | "loans";
+type Tab = "overview" | "pricing" | "points" | "loans" | "fund";
 
 export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: () => void; onOpenAbout?: () => void }) {
   const [tab, setTab] = useState<Tab>("overview");
@@ -46,6 +54,7 @@ export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: (
     { key: "pricing", label: "تسعير الصرف", icon: <Globe className="w-4 h-4" /> },
     { key: "points", label: "نقاط أومي", icon: <Coins className="w-4 h-4" /> },
     { key: "loans", label: "القروض", icon: <Landmark className="w-4 h-4" /> },
+    { key: "fund", label: "صندوق الأرباح", icon: <PiggyBank className="w-4 h-4" /> },
   ];
 
   return (
@@ -98,6 +107,7 @@ export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: (
         {tab === "pricing" && <PricingTab me={me} data={data} reload={load} />}
         {tab === "points" && <PointsTab me={me} data={data} reload={load} />}
         {tab === "loans" && <LoansTab me={me} data={data} reload={load} />}
+        {tab === "fund" && <FundTab me={me} reload={load} />}
       </div>
     </div>
   );
@@ -112,6 +122,8 @@ function OverviewTab({ data }: { data: AdminData | null }) {
     { label: "المتاجر", value: String(data.stats.merchants), icon: <Store className="w-4 h-4" />, color: "#b8a4e8" },
     { label: "المعاملات", value: String(data.stats.txs), icon: <ArrowLeftRight className="w-4 h-4" />, color: "#6fb5a3" },
     { label: "نقاط أومي المتداولة", value: fmtPoints(data.stats.pointsTotal), icon: <Coins className="w-4 h-4" />, color: "#e8c766" },
+    { label: "صندوق أرباح المحفظة", value: fmtSyp(data.fund.total), icon: <PiggyBank className="w-4 h-4" />, color: "#6fb5a3" },
+    { label: "رسوم شهرية مستحقة", value: fmtSyp(data.fund.dueTotal), icon: <Hourglass className="w-4 h-4" />, color: data.fund.dueCount > 0 ? "#c87b7b" : "#b8a4e8" },
   ];
   return (
     <div className="px-4 space-y-2.5">
@@ -474,11 +486,55 @@ function PointsTab({ me, data, reload }: { me: Me; data: AdminData | null; reloa
 /* ==== مراقبة القروض ==== */
 function LoansTab({ me, data, reload }: { me: Me; data: AdminData | null; reload: () => void }) {
   const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [loanRate, setLoanRate] = useState("");
+  const [cardRate, setCardRate] = useState("");
+  const [savingRates, setSavingRates] = useState(false);
+  const [accruing, setAccruing] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setLoanRate(String(data.settings.loanMonthlyRate));
+      setCardRate(String(data.settings.cardFeeRate));
+    }
+  }, [data]);
+
+  const saveRates = async () => {
+    setSavingRates(true); setMsg(""); setErr("");
+    try {
+      await api("/api/umi/admin", {
+        method: "PUT",
+        body: JSON.stringify({ userId: me.id, loanMonthlyRate: Number(loanRate), cardFeeRate: Number(cardRate) }),
+      });
+      setMsg("حُفظت نسب التطبيق ✓");
+      reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setSavingRates(false);
+    }
+  };
+
+  const accrue = async () => {
+    setAccruing(true); setMsg(""); setErr("");
+    try {
+      const r = await api<{ applied: number; message: string }>("/api/umi/fund", {
+        method: "POST",
+        body: JSON.stringify({ userId: me.id, action: "accrue" }),
+      });
+      setMsg(r.message);
+      reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setAccruing(false);
+    }
+  };
 
   const decide = async (id: string, action: "approve" | "reject") => {
     setBusyId(id);
-    setMsg("");
+    setMsg(""); setErr("");
     try {
       await api("/api/umi/loans", {
         method: "PATCH",
@@ -487,7 +543,7 @@ function LoansTab({ me, data, reload }: { me: Me; data: AdminData | null; reload
       setMsg(action === "approve" ? "تم قبول الطلب وشحن الرصيد ✓" : "تم رفض الطلب");
       reload();
     } catch (e) {
-      setMsg((e as Error).message);
+      setErr((e as Error).message);
     } finally {
       setBusyId(null);
     }
@@ -497,7 +553,76 @@ function LoansTab({ me, data, reload }: { me: Me; data: AdminData | null; reload
 
   return (
     <div className="px-4 space-y-3">
+      {err && <p className="text-[11px] font-tajawal text-umi-red text-center">{err}</p>}
       {msg && <p className="text-[11px] font-tajawal text-umi-teal text-center">{msg}</p>}
+
+      {/* نسب التطبيق على القروض والبطاقات */}
+      <div className="rounded-2xl umi-card p-4">
+        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-1">
+          <Percent className="w-4 h-4 text-umi-gold" /> نسب التطبيق
+        </p>
+        <p className="text-[10px] font-tajawal text-umi-muted mb-3 leading-relaxed">
+          رسوم شهرية على المتبقي من كل قرض معتمد (كل دورة 30 يوماً) تدخل صندوق أرباح المحفظة وتُضاف إلى متبقي المقترض
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label className="text-[9.5px] font-tajawal font-bold text-umi-muted block mb-1">رسوم القروض — شهرياً %</label>
+            <input
+              value={loanRate}
+              onChange={(e) => setLoanRate(e.target.value.replace(/[^\d.]/g, "").slice(0, 5))}
+              inputMode="decimal"
+              dir="ltr"
+              className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream outline-none focus:border-umi-gold/40"
+            />
+          </div>
+          <div>
+            <label className="text-[9.5px] font-tajawal font-bold text-umi-muted block mb-1">استعمال بطاقة الاعتماد %</label>
+            <input
+              value={cardRate}
+              onChange={(e) => setCardRate(e.target.value.replace(/[^\d.]/g, "").slice(0, 5))}
+              inputMode="decimal"
+              dir="ltr"
+              className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream outline-none focus:border-umi-gold/40"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={savingRates}
+          onClick={saveRates}
+          className="w-full h-10 mt-3 rounded-xl font-cairo font-extrabold text-[12px] text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+          style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
+        >
+          <Save className="w-3.5 h-3.5" /> {savingRates ? "جارٍ الحفظ…" : "حفظ النسب"}
+        </button>
+      </div>
+
+      {/* الرسوم الشهرية المستحقة الآن */}
+      <div className="rounded-2xl p-4" style={{ border: "1px solid rgba(232,199,102,0.35)", background: "rgba(232,199,102,0.06)" }}>
+        <p className="flex items-center gap-1.5 text-[11.5px] font-cairo font-bold text-umi-cream mb-1">
+          <Hourglass className="w-4 h-4 text-umi-gold" /> الرسوم الشهرية المستحقة
+        </p>
+        {data.fund.dueCount > 0 ? (
+          <p className="text-[10.5px] font-tajawal text-umi-cream leading-relaxed mb-2">
+            مستحقة على <b className="text-umi-gold">{data.fund.dueCount}</b> {data.fund.dueCount === 1 ? "قرض" : "قروض"} غير مسددة — الإجمالي{" "}
+            <b className="gold-text" dir="ltr">{fmtSyp(data.fund.dueTotal)} {SYP_UNIT}</b>
+          </p>
+        ) : (
+          <p className="text-[10px] font-tajawal text-umi-muted leading-relaxed mb-2">
+            لا رسوم مستحقة الآن — تُحتسب كل دورة 30 يوماً منذ آخر احتساب
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={accruing || data.fund.dueCount === 0}
+          onClick={accrue}
+          className="w-full h-10 rounded-xl font-tajawal font-bold text-[11.5px] text-umi-cream disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+          style={{ background: "linear-gradient(135deg,#3a2a5e,#2a1c48)", border: "1px solid rgba(232,199,102,0.35)" }}
+        >
+          <PiggyBank className="w-4 h-4 text-umi-gold" />
+          {accruing ? "جارٍ الاحتساب…" : "احتساب الرسوم وإضافتها للصندوق"}
+        </button>
+      </div>
 
       {/* طلبات بانتظار الموافقة */}
       <div>
@@ -581,11 +706,291 @@ function LoansTab({ me, data, reload }: { me: Me; data: AdminData | null; reload
                 </div>
               </div>
               <div className="h-1.5 rounded-full bg-white/5 mt-2 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((l.paidAmount / l.amount) * 100))}%`, background: "linear-gradient(90deg,#c99b3f,#f5dfa0)" }} />
+                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((l.paidAmount / (l.amount + l.feesAccrued)) * 100))}%`, background: "linear-gradient(90deg,#c99b3f,#f5dfa0)" }} />
               </div>
+              {l.feesAccrued > 0 && (
+                <p className="text-[9px] font-tajawal mt-1.5" style={{ color: "#e8c766" }}>
+                  منها رسوم تطبيق متراكمة: {fmtSyp(l.feesAccrued)} {SYP_UNIT}
+                </p>
+              )}
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==== صندوق أرباح المحفظة ==== */
+interface FundEntryT {
+  id: string;
+  kind: "loan_fee" | "card_fee" | "manual";
+  title: string;
+  amount: number;
+  createdAt: string;
+}
+
+interface FundFull {
+  rates: { loanMonthlyRate: number; cardFeeRate: number };
+  total: number;
+  month: number;
+  byKind: { loan_fee: number; card_fee: number; manual: number };
+  monthly: { ym: string; label: string; total: number }[];
+  entries: FundEntryT[];
+  due: { count: number; total: number };
+}
+
+function kindView(k: FundEntryT["kind"]) {
+  switch (k) {
+    case "loan_fee":
+      return { label: "رسوم قروض", color: "#e8c766" };
+    case "card_fee":
+      return { label: "بطاقة اعتماد", color: "#b8a4e8" };
+    default:
+      return { label: "إدخال يدوي", color: "#6fb5a3" };
+  }
+}
+
+function FundTab({ me, reload }: { me: Me; reload: () => void }) {
+  const { rates } = useRates();
+  const [fund, setFund] = useState<FundFull | null>(null);
+  const [kind, setKind] = useState<"card_fee" | "manual">("card_fee");
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [accruing, setAccruing] = useState(false);
+
+  const load = useCallback(() => {
+    api<FundFull>(`/api/umi/fund?userId=${me.id}`)
+      .then(setFund)
+      .catch(() => {});
+  }, [me.id]);
+  useEffect(load, [load]);
+
+  const accrue = async () => {
+    setAccruing(true); setMsg(""); setErr("");
+    try {
+      const r = await api<{ message: string }>("/api/umi/fund", {
+        method: "POST",
+        body: JSON.stringify({ userId: me.id, action: "accrue" }),
+      });
+      setMsg(r.message);
+      load();
+      reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setAccruing(false);
+    }
+  };
+
+  const addEntry = async () => {
+    setBusy(true); setMsg(""); setErr("");
+    try {
+      await api("/api/umi/fund", {
+        method: "POST",
+        body: JSON.stringify({ userId: me.id, action: "entry", kind, title, amount: Number(amount) }),
+      });
+      setMsg("أُضيف الإدخال إلى الصندوق ✓");
+      setTitle(""); setAmount("");
+      load();
+      reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!fund) return <p className="text-center text-umi-muted text-[11px] font-tajawal pt-10 animate-pulse">جارٍ التحميل…</p>;
+
+  const maxMonth = Math.max(...fund.monthly.map((m) => m.total), 1);
+  const kindCards = [
+    { label: "رسوم القروض", value: fund.byKind.loan_fee, icon: <Landmark className="w-4 h-4" />, color: "#e8c766" },
+    { label: "رسوم بطاقات الاعتماد", value: fund.byKind.card_fee, icon: <Percent className="w-4 h-4" />, color: "#b8a4e8" },
+    { label: "إدخالات يدوية", value: fund.byKind.manual, icon: <Plus className="w-4 h-4" />, color: "#6fb5a3" },
+  ];
+
+  return (
+    <div className="px-4 space-y-3">
+      {err && <p className="text-[11px] font-tajawal text-umi-red text-center">{err}</p>}
+      {msg && <p className="text-[11px] font-tajawal text-umi-teal text-center">{msg}</p>}
+
+      {/* الإجمالي */}
+      <div className="rounded-[22px] umi-hero p-5 relative overflow-hidden">
+        <div className="umi-shimmer-line absolute top-0 inset-x-0" />
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="w-9 h-9 rounded-xl grid place-items-center" style={{ background: "rgba(111,181,163,0.15)", border: "1px solid rgba(111,181,163,0.4)" }}>
+            <PiggyBank className="w-5 h-5 text-umi-teal" />
+          </span>
+          <p className="text-[10.5px] font-tajawal text-umi-cream/70">صندوق أرباح المحفظة</p>
+        </div>
+        <p className="font-cairo font-black text-[28px] leading-none gold-text" dir="ltr">
+          {fmtSyp(fund.total)} <span className="text-xs font-tajawal text-umi-muted">{SYP_UNIT}</span>
+        </p>
+        <p className="text-[10px] font-tajawal text-umi-teal mt-1" dir="ltr">≈ {fmtUsd(sypToUsd(fund.total, rates.usdSyp))}</p>
+        <div className="umi-shimmer-line my-3" />
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-tajawal text-umi-muted">أرباح هذا الشهر</p>
+          <p className="font-cairo font-bold text-[13px] text-umi-cream" dir="ltr">{fmtSyp(fund.month)} {SYP_UNIT}</p>
+        </div>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[10px] font-tajawal text-umi-muted">نسبة القروض الحالية</p>
+          <p className="font-cairo font-bold text-[13px] text-umi-gold" dir="ltr">{fund.rates.loanMonthlyRate}% شهرياً</p>
+        </div>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[10px] font-tajawal text-umi-muted">نسبة بطاقة الاعتماد</p>
+          <p className="font-cairo font-bold text-[13px] text-umi-gold" dir="ltr">{fund.rates.cardFeeRate}%</p>
+        </div>
+      </div>
+
+      {/* الإيرادات حسب النوع */}
+      <div className="grid grid-cols-3 gap-2">
+        {kindCards.map((c) => (
+          <div key={c.label} className="rounded-2xl umi-card p-3 text-center">
+            <span className="w-7 h-7 rounded-lg grid place-items-center mx-auto mb-1.5" style={{ background: `${c.color}18`, color: c.color }}>
+              {c.icon}
+            </span>
+            <p className="font-cairo font-bold text-[12px] text-umi-cream" dir="ltr">{fmtSyp(c.value)}</p>
+            <p className="text-[8px] font-tajawal text-umi-muted leading-tight mt-0.5">{c.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* الرسوم المستحقة + الاحتساب */}
+      <div className="rounded-2xl p-4" style={{ border: "1px solid rgba(232,199,102,0.35)", background: "rgba(232,199,102,0.06)" }}>
+        <p className="flex items-center gap-1.5 text-[11.5px] font-cairo font-bold text-umi-cream mb-1">
+          <Hourglass className="w-4 h-4 text-umi-gold" /> الرسوم الشهرية المستحقة من القروض
+        </p>
+        <p className="text-[10px] font-tajawal text-umi-muted leading-relaxed mb-2">
+          {fund.due.count > 0
+            ? `${fund.due.count > 1 ? `${fund.due.count} قروض` : "قرض واحد"} بلغت دورتها الشهرية — إجمالي ${fmtSyp(fund.due.total)} ${SYP_UNIT} بانتظار الاحتساب`
+            : "لا رسوم مستحقة الآن — كل قرض يُحتسب كل 30 يوماً على المتبقي منه"}
+        </p>
+        <button
+          type="button"
+          disabled={accruing || fund.due.count === 0}
+          onClick={accrue}
+          className="w-full h-10 rounded-xl font-tajawal font-bold text-[11.5px] text-umi-cream disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+          style={{ background: "linear-gradient(135deg,#3a2a5e,#2a1c48)", border: "1px solid rgba(232,199,102,0.35)" }}
+        >
+          <PiggyBank className="w-4 h-4 text-umi-gold" />
+          {accruing ? "جارٍ الاحتساب…" : "احتساب الرسوم وإضافتها للصندوق"}
+        </button>
+      </div>
+
+      {/* تقرير آخر 6 أشهر */}
+      <div className="rounded-2xl umi-card p-4">
+        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-3">
+          <TrendingUp className="w-4 h-4 text-umi-teal" /> تقرير الأرباح — آخر 6 أشهر
+        </p>
+        <div className="space-y-2.5">
+          {[...fund.monthly].reverse().map((m) => (
+            <div key={m.ym} className="flex items-center gap-2">
+              <span className="w-[92px] shrink-0 text-[9.5px] font-tajawal text-umi-muted">{m.label.trim()}</span>
+              <div className="flex-1 h-4 rounded-full bg-white/5 overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.max(4, Math.round((m.total / maxMonth) * 100))}%`,
+                    background: m.total > 0 ? "linear-gradient(90deg,#c99b3f,#f5dfa0)" : "transparent",
+                  }}
+                />
+              </div>
+              <span className="w-[86px] shrink-0 text-left font-cairo font-bold text-[10.5px] text-umi-cream" dir="ltr">
+                {fmtSyp(m.total)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* إدخال يدوي للصندوق */}
+      <div className="rounded-2xl umi-card p-4">
+        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-1">
+          <Plus className="w-4 h-4 text-umi-gold" /> إدخال يدوي إلى الصندوق
+        </p>
+        <p className="text-[10px] font-tajawal text-umi-muted mb-3 leading-relaxed">
+          لتسجيل إيراد محصّل خارج التطبيق — مثل رسوم بطاقات اعتماد محصّلة يدوياً
+        </p>
+        <div className="flex gap-2 mb-2.5">
+          <button
+            type="button"
+            onClick={() => setKind("card_fee")}
+            className={`flex-1 h-9 rounded-xl text-[10px] font-tajawal font-bold transition-colors ${kind === "card_fee" ? "text-[#0a0416]" : "text-umi-cream umi-card"}`}
+            style={kind === "card_fee" ? { background: "linear-gradient(135deg,#b8a4e8,#9d84d6)" } : undefined}
+          >
+            رسوم بطاقة اعتماد
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind("manual")}
+            className={`flex-1 h-9 rounded-xl text-[10px] font-tajawal font-bold transition-colors ${kind === "manual" ? "text-[#0a0416]" : "text-umi-cream umi-card"}`}
+            style={kind === "manual" ? { background: "linear-gradient(135deg,#6fb5a3,#579985)" } : undefined}
+          >
+            إيراد آخر
+          </button>
+        </div>
+        <label className="text-[10px] font-tajawal font-bold text-umi-muted block mb-1">الوصف (اختياري)</label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={kind === "card_fee" ? "رسوم بطاقات — تشرين الأول" : "مثال: عمولة خدمة"}
+          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 font-cairo text-[12px] text-umi-cream placeholder:text-umi-muted/50 outline-none focus:border-umi-gold/40 mb-2.5"
+        />
+        <label className="text-[10px] font-tajawal font-bold text-umi-muted block mb-1">المبلغ — {SYP_UNIT}</label>
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").slice(0, 10))}
+          inputMode="numeric"
+          dir="ltr"
+          placeholder="0"
+          className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-center font-cairo font-bold text-umi-cream placeholder:text-umi-muted/50 outline-none focus:border-umi-gold/40"
+        />
+        <button
+          type="button"
+          disabled={busy || !Number(amount)}
+          onClick={addEntry}
+          className="w-full h-11 mt-3 rounded-xl font-cairo font-extrabold text-sm text-[#0a0416] disabled:opacity-40 active:scale-[0.98] transition-all"
+          style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766 55%,#c99b3f)" }}
+        >
+          {busy ? "جارٍ الإضافة…" : "إضافة إلى الصندوق"}
+        </button>
+      </div>
+
+      {/* سجل الإيرادات */}
+      <div className="rounded-2xl umi-card p-4">
+        <p className="flex items-center gap-1.5 text-[12px] font-cairo font-bold text-umi-cream mb-2.5">
+          <PiggyBank className="w-4 h-4 text-umi-teal" /> سجل إيرادات الصندوق
+          <span className="text-[9.5px] font-tajawal text-umi-muted">({fund.entries.length} إدخال)</span>
+        </p>
+        {fund.entries.length === 0 && (
+          <p className="text-[10px] font-tajawal text-umi-muted text-center py-3 leading-relaxed">
+            الصندوق فارغ بعد — تُقيّد هنا رسوم القروض الشهرية ورسوم البطاقات والإدخالات اليدوية
+          </p>
+        )}
+        {fund.entries.map((e) => {
+          const kv = kindView(e.kind);
+          return (
+            <div key={e.id} className="flex items-center gap-2.5 py-2.5 border-b border-white/5 last:border-0">
+              <span
+                className="shrink-0 h-6 px-2 rounded-full flex items-center text-[8.5px] font-tajawal font-bold"
+                style={{ background: `${kv.color}15`, border: `1px solid ${kv.color}55`, color: kv.color }}
+              >
+                {kv.label}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10.5px] font-tajawal text-umi-cream truncate">{e.title}</p>
+                <p className="text-[8.5px] font-tajawal text-umi-muted">{relTime(e.createdAt)}</p>
+              </div>
+              <p className="font-cairo font-bold text-[12.5px] gold-text shrink-0" dir="ltr">
+                +{fmtSyp(e.amount)}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

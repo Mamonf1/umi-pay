@@ -1,34 +1,8 @@
-// POST /api/umi/topup — شحن المحفظة (مدى / Apple Pay / بطاقة) — بالليرة السورية
-import { db } from "@/lib/db";
-import { fail, moveMoney, ok, r2 } from "@/lib/umi-server";
+// POST /api/umi/topup — شحن المحفظة
+// ⚠️ متوقف حالياً بناءً على قرار الإدارة: جميع خيارات الشحن (مدى / Apple Pay / بطاقات) أُلغيت،
+// والبديلان «نقدي شام كاش» و«عملة مشفرة» قيد التطوير — يُعاد تفعيل هذه الواجهة عند الإطلاق
+import { fail } from "@/lib/umi-server";
 
-const MIN_TOPUP = 25000; // أقل مبلغ شحن: 25,000 ل.س
-
-const METHODS: Record<string, string> = {
-  mada: "بطاقة مدى",
-  applepay: "Apple Pay",
-  card: "بطاقة ائتمانية",
-};
-
-export async function POST(req: Request) {
-  try {
-    const { userId, amount, method } = await req.json();
-    const amt = r2(Number(amount));
-    if (!userId || !amt || amt < MIN_TOPUP)
-      return fail(`أقل مبلغ للشحن ${MIN_TOPUP.toLocaleString("en-US")} ل.س`);
-    const methodLabel = METHODS[method] ?? "بطاقة مدى";
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) return fail("المستخدم غير موجود", 404);
-
-    const reference = await moveMoney({
-      type: "topup",
-      amount: amt,
-      toUserId: userId,
-      note: `شحن عبر ${methodLabel}`,
-    });
-    const balance = await db.wallet.findUnique({ where: { userId } });
-    return ok({ reference, amount: amt, balance: r2(balance?.balance ?? 0) });
-  } catch {
-    return fail("تعذر تنفيذ الشحن", 500);
-  }
+export async function POST() {
+  return fail("الشحن داخل التطبيق متوقف حالياً — الخيارات الجديدة (شام كاش / عملة مشفرة) قيد التطوير", 503);
 }
