@@ -1,0 +1,60 @@
+// ═══════════════════════════════════════════════════════════════════
+// كود استلام إشعارات الدفع من محفظة أومي — لموقع omniastore.space-z.ai
+// ═══════════════════════════════════════════════════════════════════
+// ضع هذا الملف في مشروع موقعك على المسار:
+//   app/api/umi/webhook/route.ts
+//
+// ثم أضف مفتاح متجرك في ملف .env.local :
+//   UMI_API_KEY=umi_live_...   (انسخه من تطبيق أومي → تبويب المتاجر → معلومات API)
+//
+// وأخيراً في تطبيق أومي اكتب في «رابط استلام الإشعارات»:
+//   https://omniastore.space-z.ai/api/umi/webhook
+//   ← اضغط «اختبار» وعندما تظهر ✓ اضغط «حفظ»
+// ═══════════════════════════════════════════════════════════════════
+
+import crypto from "crypto";
+
+export async function POST(req: Request) {
+  // 1) نقرأ الجسم الخام كما وصل — التوقيع يُحسب عليه حرفياً
+  const raw = await req.text();
+
+  // 2) نتحقق من التوقيع: أومي يرسل X-UMI-Signature = HMAC-SHA256(الجسم, مفتاحك السري)
+  //    لو حاول أحد انتحال إشعار دفع فلن يملك مفتاحك → التوقيع لن يطابق → نرفض بـ 401
+  const signature = req.headers.get("x-umi-signature") ?? "";
+  const apiKey = process.env.UMI_API_KEY ?? "";
+  const expected = "sha256=" + crypto.createHmac("sha256", apiKey).update(raw, "utf8").digest("hex");
+
+  if (!apiKey || signature !== expected) {
+    return Response.json({ error: "توقيع غير صالح — الإشعار ليس من محفظة أومي" }, { status: 401 });
+  }
+
+  // 3) التوقيع صحيح — الإشعار مضمون المصدر، نقرأ محتواه
+  const payload = JSON.parse(raw);
+
+  if (payload.event === "ping") {
+    // إشعار الاختبار من زر «اختبار» في تطبيق أومي
+    console.log("[أومي] اختبار الربط نجح ✓");
+  }
+
+  if (payload.event === "payment.success") {
+    const d = payload.data;
+    // d.reference   ← رقم العملية في أومي (احفظه لمنع المعالجة المكررة)
+    // d.amount      ← المبلغ بالليرة السورية
+    // d.currency    ← "SYP"
+    // d.payerName   ← اسم الدافع
+    // d.payerPhone  ← رقم جوال الدافع في أومي
+    // d.note        ← ملاحظة العملية (مثل: دفع لـ متجر أمنيه)
+    //
+    // TODO: حدّث طلبات متجرك هنا — مثال:
+    //   await db.order.update({ where: { id: d.reference }, data: { status: "paid" } })
+    console.log("[أومي] دفع مؤكد:", d.reference, d.amount, d.currency, "من", d.payerName);
+  }
+
+  // 4) مهم جداً: رُدّ بـ 200 بسرعة — أي رد آخر (404/500) يعتبره أومي فشل تسليم
+  return Response.json({ ok: true });
+}
+
+// أومي يرسل POST فقط — أي طلب آخر نرد عليه 405
+export async function GET() {
+  return Response.json({ error: "هذا المسار يستقبل POST فقط" }, { status: 405 });
+}

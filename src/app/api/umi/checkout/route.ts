@@ -1,6 +1,7 @@
 // POST /api/umi/checkout — بوابة الدفع: دفع فاتورة تاجر
 import { db } from "@/lib/db";
 import { assertChildCanSpend, fail, moveMoney, ok, r2 } from "@/lib/umi-server";
+import { sendWebhook } from "@/lib/webhook";
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +30,25 @@ export async function POST(req: Request) {
     });
 
     const balance = await db.wallet.findUnique({ where: { userId } });
-    return ok({ reference, amount: amt, merchant: merchant.name, balance: r2(balance?.balance ?? 0) });
+
+    // إشعار فوري لموقع التاجر (webhook) — لا يؤثر على نجاح الدفع إن فشل التسليم
+    const wh = await sendWebhook(merchantId, "payment.success", {
+      reference,
+      amount: amt,
+      currency: "SYP",
+      payerName: user.name,
+      payerPhone: user.phone,
+      note: `دفع لـ ${merchant.name}`,
+      status: "completed",
+    }).catch(() => null);
+
+    return ok({
+      reference,
+      amount: amt,
+      merchant: merchant.name,
+      balance: r2(balance?.balance ?? 0),
+      notified: wh?.delivered ?? false,
+    });
   } catch {
     return fail("تعذر إتمام الدفع", 500);
   }

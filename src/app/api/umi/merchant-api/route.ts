@@ -4,6 +4,7 @@
 // POST {userId, action: webhook, url}  → تحديث رابط استلام الإشعارات (webhook)
 import { db } from "@/lib/db";
 import { fail, ok } from "@/lib/umi-server";
+import { sendWebhook } from "@/lib/webhook";
 import crypto from "crypto";
 
 const genKey = () => "umi_live_" + crypto.randomBytes(24).toString("hex");
@@ -89,8 +90,48 @@ export async function POST(req: Request) {
       });
     }
 
+    // اختبار رابط الإشعارات — يرسل ping حقيقي ويعيد نتيجة التسليم
+    if (action === "test") {
+      const target = String(url ?? "").trim() || m.webhookUrl;
+      if (!target) return fail("أدخل رابط الإشعارات أولاً ثم جرّبه");
+      if (!/^https?:\/\/.+/i.test(target))
+        return fail("الرابط غير صحيح — يجب أن يبدأ بـ http:// أو https://");
+      // نختبر على رابط مؤقت دون تعديل المحفوظ: نضبط الرابط ثم نعيد الحالة الأصلية
+      const original = m.webhookUrl;
+      const tmp = await db.merchant.update({
+        where: { id: m.id },
+        data: { webhookUrl: target },
+      });
+      const res = await sendWebhook(m.id, "ping", {
+        message: "هذا إشعار اختبار من محفظة أومي — إذا وصلتك هذه الرسالة فالربط يعمل ✓",
+        amount: 0,
+        currency: "SYP",
+        reference: "TEST-" + crypto.randomBytes(4).toString("hex").toUpperCase(),
+      });
+      if (tmp.webhookUrl !== original)
+        await db.merchant.update({ where: { id: m.id }, data: { webhookUrl: original } });
+      return ok({
+        delivered: res.delivered,
+        httpStatus: res.status ?? null,
+        tookMs: res.ms,
+        error: res.error ?? null,
+        message: res.delivered
+          ? `وصل الإشعار لموقعك بنجاح ✓ (HTTP ${res.status} خلال ${res.ms} مللي ثانية)`
+          : `فشل الوصول: ${describeError(res.error, res.status)} — تأكد أن المسار موجود في موقعك ويستقبل POST`,
+      });
+    }
+
     return fail("إجراء غير معروف");
   } catch {
     return fail("تعذر تنفيذ الإجراء", 500);
   }
+}
+
+function describeError(err: string | undefined, status?: number): string {
+  if (err === "timeout") return "انتهت المهلة (8 ثوانٍ) دون رد من موقعك";
+  if (err === "connection_refused") return "الموقع رفض الاتصال";
+  if (err === "dns_not_found") return "تعذر العثور على العنوان (تحقق من كتابة الرابط)";
+  if (err === "ssl_error") return "مشكلة في شهادة الأمان SSL";
+  if (status) return `موقعك رد بـ HTTP ${status} (المطلوب 200)`;
+  return "تعذر الوصول للموقع";
 }

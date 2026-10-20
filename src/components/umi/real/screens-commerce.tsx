@@ -152,6 +152,8 @@ function MerchantApiPanel({ me }: { me: Me }) {
   const [copied, setCopied] = useState("");
   const [webhook, setWebhook] = useState("");
   const [savingWebhook, setSavingWebhook] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [regenArmed, setRegenArmed] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -210,7 +212,7 @@ function MerchantApiPanel({ me }: { me: Me }) {
   };
 
   const saveWebhook = async () => {
-    setSavingWebhook(true); setMsg(""); setErr("");
+    setSavingWebhook(true); setMsg(""); setErr(""); setTestResult(null);
     try {
       const r = await api<{ webhookUrl: string | null; message: string }>("/api/umi/merchant-api", {
         method: "POST",
@@ -222,6 +224,22 @@ function MerchantApiPanel({ me }: { me: Me }) {
       setErr((e as Error).message);
     } finally {
       setSavingWebhook(false);
+    }
+  };
+
+  // اختبار الرابط: يرسل إشعار ping حقيقي إلى المكتوب في الحقل ويعرض نتيجة الوصول
+  const testWebhook = async () => {
+    setTesting(true); setMsg(""); setErr(""); setTestResult(null);
+    try {
+      const r = await api<{ delivered: boolean; httpStatus: number | null; tookMs: number; message: string }>(
+        "/api/umi/merchant-api",
+        { method: "POST", body: JSON.stringify({ userId: me.id, action: "test", url: webhook }) },
+      );
+      setTestResult({ ok: r.delivered, text: r.message });
+    } catch (e) {
+      setTestResult({ ok: false, text: (e as Error).message });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -318,10 +336,19 @@ function MerchantApiPanel({ me }: { me: Me }) {
                       value={webhook}
                       onChange={(e) => setWebhook(e.target.value)}
                       dir="ltr"
-                      placeholder="https://your-site.com/umi-webhook"
+                      placeholder="https://your-site.com/api/umi/webhook"
                       className="w-full h-10 rounded-xl bg-white/5 border border-white/10 pr-9 pl-3 text-left font-cairo text-[10.5px] text-umi-cream placeholder:text-umi-muted/40 outline-none focus:border-umi-gold/40"
                     />
                   </div>
+                  <button
+                    type="button"
+                    disabled={testing || savingWebhook || !webhook.trim()}
+                    onClick={testWebhook}
+                    className="h-10 px-3 rounded-xl font-tajawal font-bold text-[10.5px] text-umi-cream disabled:opacity-40 shrink-0"
+                    style={{ background: "rgba(123,91,199,0.22)", border: "1px solid rgba(123,91,199,0.5)" }}
+                  >
+                    {testing ? "…" : "اختبار"}
+                  </button>
                   <button
                     type="button"
                     disabled={savingWebhook}
@@ -332,6 +359,17 @@ function MerchantApiPanel({ me }: { me: Me }) {
                     {savingWebhook ? "…" : "حفظ"}
                   </button>
                 </div>
+                {testResult && (
+                  <p
+                    className={`text-[9.5px] font-tajawal leading-relaxed mb-2 px-3 py-2 rounded-xl ${testResult.ok ? "text-umi-teal" : "text-umi-red"}`}
+                    style={{ background: testResult.ok ? "rgba(126,217,176,0.08)" : "rgba(200,123,123,0.08)", border: `1px solid ${testResult.ok ? "rgba(126,217,176,0.3)" : "rgba(200,123,123,0.3)"}` }}
+                  >
+                    {testResult.text}
+                  </p>
+                )}
+                <p className="text-[8.5px] font-tajawal text-umi-muted leading-relaxed mb-3">
+                  اكتب رابطاً كاملاً في موقعك يستقبل POST — مثال: https://omniastore.space-z.ai/api/umi/webhook — ويُرسل مع كل إشعار توقيع X-UMI-Signature للتحقق منه
+                </p>
 
                 {/* نقاط النهاية */}
                 <p className="flex items-center gap-1.5 text-[10px] font-tajawal font-bold text-umi-muted mt-4 mb-1.5">
@@ -341,7 +379,7 @@ function MerchantApiPanel({ me }: { me: Me }) {
                   {[
                     { m: "POST", p: "/api/umi/checkout", d: "الدفع لمتجرك داخل تطبيق أومي برمز الدفع" },
                     { m: "GET", p: "/api/umi/transactions?userId=…", d: "سجل معاملات المتجر الكامل" },
-                    { m: "POST", p: "Webhook لديك", d: "إشعار فوري عند كل عملية دفع ناجحة" },
+                    { m: "POST", p: "Webhook لديك", d: "إشعار فوري عند كل عملية دفع مع توقيع X-UMI-Signature (HMAC-SHA256 بمفتاحك)" },
                   ].map((e) => (
                     <div key={e.m + e.p} className="px-3 py-2.5 bg-white/[0.02]">
                       <p className="flex items-center gap-1.5" dir="ltr">
