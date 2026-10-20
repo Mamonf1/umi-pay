@@ -43,14 +43,17 @@ model Wallet {
 }
 
 model Merchant {
-  id       String        @id @default(cuid())
-  name     String
-  category String
-  emoji    String
-  color    String        @default("#7b5bc7")
-  ownerId  String        @unique
-  owner    User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  txs      Transaction[]
+  id         String        @id @default(cuid())
+  name       String
+  category   String
+  emoji      String
+  color      String        @default("#7b5bc7")
+  ownerId    String        @unique
+  owner      User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  apiKey     String?       // مفتاح ربط API الخاص بالتاجر (يُولَّد تلقائياً عند أول فتح لقسم المعلومات)
+  apiKeyAt   DateTime?     // تاريخ إنشاء/تجديد المفتاح
+  webhookUrl String?       // رابط استلام إشعارات الدفع لدى التاجر
+  txs        Transaction[]
 }
 
 model Transaction {
