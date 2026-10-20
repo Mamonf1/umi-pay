@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   // إزالة علامة أدوات المطور نهائياً — كانت تحجب تبويب الخدمات في الشريط السفلي
   devIndicators: false,
+  // playwright خارج حزمة الخادم — لمحرك توليد PDF العربي (إيصالات وتقارير)
+  serverExternalPackages: ["playwright"],
 };
 
 export default nextConfig;

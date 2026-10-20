@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Bell, ChevronLeft, Eye, EyeOff, LogOut, QrCode, ShieldCheck,
   Smartphone, ArrowDownLeft, ArrowUpRight, Store, HandCoins, Sparkles,
-  KeyRound, Lock, BadgeCheck, Info,
+  KeyRound, Lock, BadgeCheck, Info, FileBarChart,
 } from "lucide-react";
 import { AboutFooterLink } from "@/components/umi/real/screens-about";
 import { StatusBar } from "@/components/umi/shell";
@@ -268,6 +268,7 @@ export function HomeScreen({
   onOpenProfile,
   onOpenTamayuz,
   onOpenAbout,
+  onOpenTx,
 }: {
   data: HomeData;
   hidden: boolean;
@@ -277,6 +278,7 @@ export function HomeScreen({
   onOpenProfile: () => void;
   onOpenTamayuz: () => void;
   onOpenAbout?: () => void;
+  onOpenTx?: (id: string) => void;
 }) {
   const { me, weekIn, weekOut, txs } = data;
   const { rates } = useRates();
@@ -459,7 +461,7 @@ export function HomeScreen({
                 sub={`${TYPE_LABELS[t.type]}${t.note ? " · " + t.note : ""} · ${relTime(t.createdAt)}`}
                 amount={t.amount}
                 direction={t.direction}
-                onClick={onOpenHistory}
+                onClick={onOpenTx ? () => onOpenTx(t.id) : onOpenHistory}
               />
             ))}
             {txs.length === 0 && (
@@ -473,7 +475,7 @@ export function HomeScreen({
 }
 
 /* ============ شاشة السجل ============ */
-export function HistoryScreen({ meId, onBack }: { meId: string; onBack: () => void }) {
+export function HistoryScreen({ meId, onBack, onOpenTx, onOpenReports }: { meId: string; onBack: () => void; onOpenTx?: (id: string) => void; onOpenReports?: () => void }) {
   const [filter, setFilter] = useState<"all" | "in" | "out" | "merchant">("all");
   const [txs, setTxs] = useState<TxItem[] | null>(null);
 
@@ -497,7 +499,7 @@ export function HistoryScreen({ meId, onBack }: { meId: string; onBack: () => vo
 
   return (
     <div className="absolute inset-0 z-40 bg-umi-bg flex flex-col">
-      <ScreenHeader title="سجل المعاملات" subtitle="بالليرة السورية — محفوظ في قاعدة البيانات" onBack={onBack} />
+      <ScreenHeader title="سجل المعاملات" subtitle="اضغط أي عملية للتفاصيل والمشاركة PDF" onBack={onBack} />
       <div className="flex gap-1.5 px-4 pb-3">
         {filters.map((f) => (
           <button
@@ -512,6 +514,15 @@ export function HistoryScreen({ meId, onBack }: { meId: string; onBack: () => vo
             {f.label}
           </button>
         ))}
+        {onOpenReports && (
+          <button
+            type="button"
+            onClick={onOpenReports}
+            className="mr-auto px-3.5 h-8 rounded-full text-[11px] font-tajawal font-bold text-umi-gold umi-card flex items-center gap-1"
+          >
+            <FileBarChart className="w-3.5 h-3.5" /> تقارير
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto umi-scroll pb-6">
         {txs === null && <p className="text-center text-umi-muted text-[11px] font-tajawal pt-10 animate-pulse">جارٍ التحميل…</p>}
@@ -523,6 +534,7 @@ export function HistoryScreen({ meId, onBack }: { meId: string; onBack: () => vo
             sub={`${TYPE_LABELS[t.type]}${t.note ? " · " + t.note : ""} · ${relTime(t.createdAt)} · ${t.reference}`}
             amount={t.amount}
             direction={t.direction}
+            onClick={onOpenTx ? () => onOpenTx(t.id) : undefined}
           />
         ))}
         {txs?.length === 0 && <p className="text-center text-[11px] font-tajawal text-umi-muted py-10">لا توجد نتائج</p>}
@@ -732,7 +744,7 @@ export function TamayuzSheet({ me, onClose }: { me: Me; onClose: () => void }) {
 }
 
 /* ============ الملف الشخصي — المحفظة + الأمان + البطاقات ============ */
-export function ProfileScreen({ me, onLogout, onClose, onOpenAbout, onUpgraded }: { me: Me; onLogout: () => void; onClose: () => void; onOpenAbout?: () => void; onUpgraded?: () => void }) {
+export function ProfileScreen({ me, onLogout, onClose, onOpenAbout, onUpgraded, onOpenReports }: { me: Me; onLogout: () => void; onClose: () => void; onOpenAbout?: () => void; onUpgraded?: () => void; onOpenReports?: () => void }) {
   const { rates } = useRates();
   const roleLabel =
     me.role === "merchant" ? "حساب تاجر" : me.role === "admin" ? "أدمن المحفظة" : "حساب شخصي";
@@ -800,6 +812,16 @@ export function ProfileScreen({ me, onLogout, onClose, onOpenAbout, onUpgraded }
             عملتك الأساسية الليرة السورية — مكافئ الدولار يُحسب من سعر الصرف الذي تديره الإدارة، ونقاط أومي محفظة مكافآت تُمنح من الإدارة فقط.
           </p>
         </div>
+
+        {onOpenReports && (
+          <button
+            type="button"
+            onClick={onOpenReports}
+            className="w-full h-11 rounded-xl umi-card flex items-center justify-center gap-2 text-umi-cream font-tajawal font-bold text-[13px] active:bg-white/5 mb-2.5"
+          >
+            <FileBarChart className="w-4 h-4 text-umi-gold" /> تقاريري — كشوف ومشاركة PDF
+          </button>
+        )}
 
         {onOpenAbout && (
           <button

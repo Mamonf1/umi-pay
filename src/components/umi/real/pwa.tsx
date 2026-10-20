@@ -38,7 +38,8 @@ export function isStandalone(): boolean {
 export function useIsStandalone(): boolean {
   const [sa, setSa] = useState(false);
   useEffect(() => {
-    setSa(isStandalone());
+    const t = setTimeout(() => setSa(isStandalone()), 0);
+    return () => clearTimeout(t);
   }, []);
   return sa;
 }

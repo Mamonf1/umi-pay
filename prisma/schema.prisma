@@ -31,6 +31,8 @@ model User {
   familiesAsParent FamilyMember[] @relation("Parent")
   txFrom           Transaction[]  @relation("TxFrom")
   txTo             Transaction[]  @relation("TxTo")
+  friendsAdded     Friend[]       @relation("FriendOwner")
+  friendOf         Friend[]       @relation("FriendUser")
   createdAt        DateTime       @default(now())
 }
 
@@ -131,8 +133,9 @@ model ChatMessage {
   id        String     @id @default(cuid())
   threadId  String
   senderId  String
-  kind      String     @default("text") // text | transfer
+  kind      String     @default("text") // text | transfer | image | statement | report_request
   text      String?
+  data      String?    // حمولة إضافية: dataURL للصور أو JSON لكشف الحساب
   amount    Float?
   txId      String?    @unique
   thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
@@ -160,4 +163,17 @@ model CurrencySettings {
   loanMonthlyRate Float    @default(1.5) // نسبة التطبيق من القروض شهرياً — بالمئة
   cardFeeRate     Float    @default(3.5) // نسبة استعمال بطاقة الاعتماد — بالمئة
   updatedAt       DateTime @updatedAt
+}
+
+// الأصدقاء — طلب صداقة (pending) ثم قبول (accepted) على الجهتين
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  status    String   @default("pending") // pending: طلب بانتظار القبول | accepted: صديقان
+  createdAt DateTime @default(now())
+  user      User     @relation("FriendOwner", fields: [userId], references: [id])
+  friend    User     @relation("FriendUser", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
 }

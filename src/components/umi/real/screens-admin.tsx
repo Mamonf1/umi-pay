@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   LogOut, Users, Store, ArrowLeftRight, Coins, RefreshCw, Check, X,
   HandCoins, Landmark, Globe, Save, Clock, Wallet, Info,
-  PiggyBank, Percent, Hourglass, Plus, TrendingUp,
+  PiggyBank, Percent, Hourglass, Plus, TrendingUp, MessageCircle,
 } from "lucide-react";
 import { StatusBar } from "@/components/umi/shell";
 import { CoinIcon } from "@/components/umi/real/screens-main";
@@ -15,6 +15,7 @@ import { useRates } from "@/lib/rates";
 import { fmtSyp, fmtUsd, sypToUsd, fmtPoints, pointsToSyp, SYP_UNIT } from "@/lib/currency";
 import { relTime, type Me } from "@/lib/umi-types";
 import type { LoanItem } from "@/lib/umi-types";
+import { ChatScreen } from "@/components/umi/real/screens-social";
 
 interface AdminData {
   admin: { name: string; avatar: string };
@@ -36,7 +37,7 @@ interface AdminData {
   };
 }
 
-type Tab = "overview" | "pricing" | "points" | "loans" | "fund";
+type Tab = "overview" | "pricing" | "points" | "loans" | "fund" | "chat";
 
 export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: () => void; onOpenAbout?: () => void }) {
   const [tab, setTab] = useState<Tab>("overview");
@@ -55,6 +56,7 @@ export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: (
     { key: "points", label: "نقاط أومي", icon: <Coins className="w-4 h-4" /> },
     { key: "loans", label: "القروض", icon: <Landmark className="w-4 h-4" /> },
     { key: "fund", label: "صندوق الأرباح", icon: <PiggyBank className="w-4 h-4" /> },
+    { key: "chat", label: "الدردشة", icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
   return (
@@ -102,12 +104,17 @@ export function AdminScreen({ me, onLogout, onOpenAbout }: { me: Me; onLogout: (
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto umi-scroll pb-6">
-        {tab === "overview" && <OverviewTab data={data} />}
-        {tab === "pricing" && <PricingTab me={me} data={data} reload={load} />}
-        {tab === "points" && <PointsTab me={me} data={data} reload={load} />}
-        {tab === "loans" && <LoansTab me={me} data={data} reload={load} />}
-        {tab === "fund" && <FundTab me={me} reload={load} />}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {tab === "overview" && <div className="overflow-y-auto umi-scroll pb-6"><OverviewTab data={data} /></div>}
+        {tab === "pricing" && <div className="overflow-y-auto umi-scroll pb-6"><PricingTab me={me} data={data} reload={load} /></div>}
+        {tab === "points" && <div className="overflow-y-auto umi-scroll pb-6"><PointsTab me={me} data={data} reload={load} /></div>}
+        {tab === "loans" && <div className="overflow-y-auto umi-scroll pb-6"><LoansTab me={me} data={data} reload={load} /></div>}
+        {tab === "fund" && <div className="overflow-y-auto umi-scroll pb-6"><FundTab me={me} reload={load} /></div>}
+        {tab === "chat" && (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <ChatScreen me={me} onExit={() => setTab("overview")} onChanged={load} />
+          </div>
+        )}
       </div>
     </div>
   );

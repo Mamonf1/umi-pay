@@ -39,13 +39,24 @@ export async function GET(req: Request) {
     const tb = b.last ? new Date(b.last.createdAt).getTime() : 0;
     return tb - ta;
   });
-  return ok(data);
+  return ok({ threads: data });
 }
 
 export async function POST(req: Request) {
   try {
-    const { threadId, userId, peerId, text, amount, pin } = await req.json();
+    const { threadId, userId, peerId, text, amount, pin, image, statement, requestReport, action } = await req.json();
     if (!userId) return fail("جلسة غير صالحة");
+
+    // فتح محادثة مع صديق دون رسالة — يعيد معرف المحادثة (ينشئها إن لم توجد)
+    if (action === "ensure") {
+      if (!peerId) return fail("حدد المستلم");
+      if (peerId === userId) return fail("لا يمكن محادثة نفسك");
+      let th = await db.chatThread.findFirst({
+        where: { OR: [{ userAId: userId, userBId: peerId }, { userAId: peerId, userBId: userId }] },
+      });
+      if (!th) th = await db.chatThread.create({ data: { userAId: userId, userBId: peerId } });
+      return ok({ threadId: th.id });
+    }
 
     // إيجاد المحادثة أو إنشاؤها
     let tid = threadId as string | undefined;
@@ -57,6 +68,60 @@ export async function POST(req: Request) {
       });
       if (!th) th = await db.chatThread.create({ data: { userAId: userId, userBId: peerId } });
       tid = th.id;
+    }
+
+    // طلب مشاركة كشف الحساب — رسالة من نوع report_request
+    if (requestReport) {
+      const m = await db.chatMessage.create({
+        data: { threadId: tid, senderId: userId, kind: "report_request", text: "طلب مشاركة كشف الحساب المشترك" },
+      });
+      return ok({ message: { ...m, mine: true, createdAt: m.createdAt.toISOString() } });
+    }
+
+    // إرسال كشف حساب مشترك — يولّد الخادم ملخص العمليات بين الطرفين
+    if (statement) {
+      const thread = await db.chatThread.findUnique({ where: { id: tid } });
+      if (!thread) return fail("المحادثة غير موجودة", 404);
+      const peerId2 = thread.userAId === userId ? thread.userBId : thread.userAId;
+      const rows = await db.transaction.findMany({
+        where: { OR: [{ fromUserId: userId, toUserId: peerId2 }, { fromUserId: peerId2, toUserId: userId }] },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          from: { select: { name: true } },
+          to: { select: { name: true } },
+        },
+      });
+      const txs = rows.map((t) => ({
+        reference: t.reference,
+        amount: t.amount,
+        dir: t.fromUserId === userId ? "out" : "in",
+        createdAt: t.createdAt.toISOString(),
+      }));
+      const totalIn = txs.filter((t) => t.dir === "in").reduce((s, t) => s + t.amount, 0);
+      const totalOut = txs.filter((t) => t.dir === "out").reduce((s, t) => s + t.amount, 0);
+      const payload = JSON.stringify({ count: txs.length, totalIn, totalOut, txs });
+      const m = await db.chatMessage.create({
+        data: { threadId: tid, senderId: userId, kind: "statement", text: "كشف حساب مشترك", data: payload },
+      });
+      return ok({ message: { ...m, mine: true, createdAt: m.createdAt.toISOString() } });
+    }
+
+    // صورة (dataURL مضغوط من العميل ≤ ~200KB) مع تعليق اختياري
+    if (image) {
+      const img = String(image);
+      if (!img.startsWith("data:image/")) return fail("صيغة الصورة غير مدعومة");
+      if (img.length > 400_000) return fail("الصورة كبيرة جداً — جرّب صورة أصغر");
+      const m = await db.chatMessage.create({
+        data: {
+          threadId: tid,
+          senderId: userId,
+          kind: "image",
+          text: text ? String(text).trim().slice(0, 200) : null,
+          data: img,
+        },
+      });
+      return ok({ message: { ...m, mine: true, createdAt: m.createdAt.toISOString() } });
     }
 
     const amt = amount ? r2(Number(amount)) : 0;

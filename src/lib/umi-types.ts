@@ -100,11 +100,22 @@ export interface ThreadT {
 export interface MsgT {
   id: string;
   senderId: string;
-  kind: "text" | "transfer";
+  kind: "text" | "transfer" | "image" | "statement" | "report_request";
   text: string | null;
+  data: string | null; // dataURL للصور أو JSON لكشف الحساب
   amount: number | null;
+  txId?: string | null;
   mine: boolean;
   createdAt: string;
+}
+
+export interface FriendT {
+  id: string;
+  name: string;
+  phone: string;
+  avatar: string;
+  role?: string;
+  since?: string;
 }
 
 export const TYPE_LABELS: Record<TxType, string> = {

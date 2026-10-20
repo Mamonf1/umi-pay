@@ -13,13 +13,14 @@ import { StoresScreen } from "@/components/umi/real/screens-commerce";
 import { ChatScreen } from "@/components/umi/real/screens-social";
 import { QrScannerSheet } from "@/components/umi/real/screens-scan";
 import { AboutScreen } from "@/components/umi/real/screens-about";
+import { TransactionDetailSheet, ReportsScreen } from "@/components/umi/real/screens-tx";
 import { api } from "@/lib/umi-client";
 import { RatesProvider } from "@/lib/rates";
 import { AdminScreen } from "@/components/umi/real/screens-admin";
 import { UmiLogo } from "@/components/umi/logo";
 import type { HomeData, Me } from "@/lib/umi-types";
 
-type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | "about" | "scan" | null;
+type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | "about" | "scan" | "tx" | "reports" | null;
 
 export function UmiApp() {
   return (
@@ -34,6 +35,7 @@ function UmiAppInner() {
   const [home, setHome] = useState<HomeData | null>(null);
   const [tab, setTab] = useState<ScreenKey>("home");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [txId, setTxId] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
   const [booting, setBooting] = useState(true);
 
@@ -123,6 +125,7 @@ function UmiAppInner() {
           onOpenProfile={() => setOverlay("profile")}
           onOpenTamayuz={() => setOverlay("tamayuz")}
           onOpenAbout={() => setOverlay("about")}
+          onOpenTx={(id) => { setTxId(id); setOverlay("tx"); }}
         />
       ) : (
         <div className="min-h-[100dvh] grid place-items-center bg-umi-bg">
@@ -138,9 +141,22 @@ function UmiAppInner() {
       <div className="relative min-h-[100dvh]">
         {tabs[tab]}
         {overlay === "topup" && meData && <TopUpSheet me={meData} onClose={() => setOverlay(null)} onDone={() => { setOverlay(null); refresh(); }} />}
-        {overlay === "history" && meData && <HistoryScreen meId={meData.id} onBack={() => setOverlay(null)} />}
+        {overlay === "history" && meData && (
+          <HistoryScreen
+            meId={meData.id}
+            onBack={() => setOverlay(null)}
+            onOpenTx={(id) => { setTxId(id); setOverlay("tx"); }}
+            onOpenReports={() => setOverlay("reports")}
+          />
+        )}
+        {overlay === "tx" && meData && txId && (
+          <TransactionDetailSheet me={meData} txId={txId} onClose={() => setOverlay(null)} onChanged={refresh} />
+        )}
+        {overlay === "reports" && meData && (
+          <ReportsScreen me={meData} onClose={() => setOverlay(null)} onOpenTx={(id) => { setTxId(id); setOverlay("tx"); }} />
+        )}
         {overlay === "profile" && meData && (
-          <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} onOpenAbout={() => setOverlay("about")} onUpgraded={refresh} />
+          <ProfileScreen me={meData} onLogout={logout} onClose={() => setOverlay(null)} onOpenAbout={() => setOverlay("about")} onUpgraded={refresh} onOpenReports={() => setOverlay("reports")} />
         )}
         {overlay === "qr" && meData && <QrSheet me={meData} onClose={() => setOverlay(null)} />}
         {overlay === "scan" && meData && (
