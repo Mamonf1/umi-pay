@@ -2,10 +2,14 @@
 
 // UMI PAY — قارئ رمز QR (زر المسح في منتصف الشريط السفلي)
 // الكاميرا تقرأ رمز محفظة أومي (umipay:<id>) → يظهر اسم المستلم → المبلغ → رمز الدفع → إرسال
-// عند تعذر الكاميرا: إدخال يدوي برقم المستلم بنفس المسار تماماً
+// صلاحيات الكاميرا: 3 مسارات دائماً متاحة
+//   1) كاميرا حية getUserMedia (تتطلب HTTPS + صلاحية + ليست داخل iframe محجوب)
+//   2) التقاط صورة للرمز بكاميرا النظام capture=environment — تعمل داخل المعاينة المدمجة أيضاً
+//   3) فتح التطبيق في تبويب جديد عند كشف iframe (المعاينة المدمجة تمنع الكاميرا بسياسة الصلاحيات)
+//   4) إدخال يدوي برقم المستلم بنفس المسار تماماً
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { CameraOff, Keyboard, RefreshCw, ScanLine, ShieldCheck } from "lucide-react";
+import { Camera, CameraOff, ExternalLink, ImageUp, Keyboard, Loader2, RefreshCw, ScanLine, ShieldCheck } from "lucide-react";
 import {
   ScreenHeader, AmountPad, PinPad, ProcessingView, SuccessView, SypAmount,
 } from "@/components/umi/real/pads";
@@ -30,6 +34,20 @@ export function QrScannerSheet({
   const [err, setErr] = useState("");
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState<{ ref: string; amount: number } | null>(null);
+  const [inIframe, setInIframe] = useState(false); // المعاينة المدمجة تمنع الكاميرا بسياسة الصلاحيات
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const inIframeRef = useRef(false); // ref لأن إغلاق الكاميرا يلتقط القيمة من أول render
+
+  /* كشف iframe: كاميرا getUserMedia محجوبة داخل الإطارات المدمجة إلا إذا سمحت الصفحة الأم */
+  useEffect(() => {
+    try {
+      inIframeRef.current = window.self !== window.top;
+    } catch {
+      inIframeRef.current = true; // فشل الوصول للأب = نحن داخل إطار بالتأكيد
+    }
+    setInIframe(inIframeRef.current);
+  }, []);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -71,6 +89,90 @@ export function QrScannerSheet({
       setStage("amount");
     } catch (e) {
       setErr((e as Error).message);
+    }
+  };
+
+  /** تشخيص دقيق لسبب فشل الكاميرا — رسالة مختلفة لكل حالة */
+  const describeCamError = (e: unknown): string => {
+    const name = (e as DOMException)?.name ?? "";
+    if (typeof window !== "undefined" && !window.isSecureContext)
+      return "الكاميرا تتطلب اتصالاً آمناً (HTTPS) — افتح التطبيق عبر الرابط الآمن، أو استخدم «التقاط صورة للرمز» بالأسفل.";
+    switch (name) {
+      case "NotAllowedError":
+        return inIframeRef.current
+          ? "نافذة المعاينة المدمجة تمنع صلاحية الكاميرا (سياسة أمان المتصفح). افتح التطبيق في تبويب جديد لتفعيل الكاميرا الحية، أو التقط صورة للرمز بالأسفل — تعمل من هنا مباشرة."
+          : "صلاحية الكاميرا مرفوضة — اسمح بالوصول للكاميرا لهذا الموقع من إعدادات المتصفح (أيقونة القفل بجانب العنوان)، أو التقط صورة للرمز بالأسفل.";
+      case "NotFoundError":
+      case "OverconstrainedError":
+        return "لا توجد كاميرا متاحة على هذا الجهاز — التقط صورة للرمز أو أدخل رقم المستلم يدوياً بالأسفل.";
+      case "NotReadableError":
+        return "الكاميرا مستخدمة من تطبيق آخر — أغلق التطبيقات الأخرى وأعد المحاولة.";
+      default:
+        return "تعذر فتح الكاميرا — التقط صورة للرمز بالكاميرا أو أدخل رقم المستلم يدوياً بالأسفل.";
+    }
+  };
+
+  /** فك تشفير رمز أومي من صورة ملتقطة (بكاميرا النظام — تعمل داخل المعاينة المدمجة أيضاً) */
+  const decodePhoto = (file: File) => {
+    setErr("");
+    setPhotoBusy(true);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const maxSide = 1200;
+        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const cx = c.getContext("2d", { willReadFrequently: true });
+        if (!cx) throw new Error("تعذر معالجة الصورة على هذا الجهاز");
+        cx.drawImage(img, 0, 0, w, h);
+
+        // محاولة 1: الصورة كاملة — محاولة 2: قص المنتصف (لقطة الكاميرا غالباً تُحيط الرمز بتفاصيل)
+        let code: ReturnType<typeof jsQR> = null;
+        for (const region of [null, { s: 0.7 }, { s: 0.5 }]) {
+          if (region) {
+            const sw = Math.round(w * region.s);
+            const sh = Math.round(h * region.s);
+            const sx = Math.round((w - sw) / 2);
+            const sy = Math.round((h - sh) / 2);
+            const d = cx.getImageData(sx, sy, sw, sh);
+            code = jsQR(d.data, sw, sh, { inversionAttempts: "attemptBoth" });
+          } else {
+            const d = cx.getImageData(0, 0, w, h);
+            code = jsQR(d.data, w, h, { inversionAttempts: "attemptBoth" });
+          }
+          const payload = code?.data?.trim();
+          if (payload?.startsWith("umipay:")) {
+            void resolveCode(payload);
+            return;
+          }
+        }
+        setCamErr("لم أتعرف على رمز أومي في الصورة — اقترب من الرمز في إضاءة جيدة وأعد التصوير، أو أدخل رقم المستلم يدوياً بالأسفل.");
+      } catch (e2) {
+        setCamErr((e2 as Error).message || "تعذر تحليل الصورة");
+      } finally {
+        URL.revokeObjectURL(url);
+        setPhotoBusy(false);
+        if (fileRef.current) fileRef.current.value = "";
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      setPhotoBusy(false);
+      setCamErr("تعذر فتح الصورة — أعد المحاولة.");
+    };
+    img.src = url;
+  };
+
+  const openStandalone = () => {
+    try {
+      window.open(window.location.href, "_blank", "noopener");
+    } catch {
+      /* بعض المتصفحات داخل iframe تمنع window.open — المستخدم يمكنه نسخ الرابط */
     }
   };
 
@@ -122,9 +224,8 @@ export function QrScannerSheet({
           rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
-      } catch {
-        if (!cancelled)
-          setCamErr("تعذر فتح الكاميرا — تأكد من منح صلاحية الكاميرا للمتصفح، أو أدخل رقم المستلم يدوياً بالأسفل.");
+      } catch (e) {
+        if (!cancelled) setCamErr(describeCamError(e));
       }
     };
     start();
@@ -201,7 +302,7 @@ export function QrScannerSheet({
             </p>
           )}
 
-          {/* خطأ الكاميرا / رمز غير صالح */}
+          {/* خطأ الكاميرا / رمز غير صالح — مع بدائل الصلاحيات الكاملة */}
           {camErr && (
             <div className="absolute inset-0 grid place-items-center px-6">
               <div className="rounded-3xl p-5 umi-card text-center w-full">
@@ -209,17 +310,50 @@ export function QrScannerSheet({
                   <CameraOff className="w-6 h-6 text-umi-red" />
                 </div>
                 <p className="text-[11px] font-tajawal text-umi-cream leading-relaxed">{camErr}</p>
-                <button
-                  type="button"
-                  onClick={() => { setCamErr(""); setScanKey((k) => k + 1); }}
-                  className="mt-3 inline-flex items-center gap-1.5 px-4 h-9 rounded-xl font-tajawal font-bold text-[11px] text-[#0a0416]"
-                  style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> إعادة محاولة الكاميرا
-                </button>
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={photoBusy}
+                    onClick={() => fileRef.current?.click()}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl font-tajawal font-extrabold text-[11.5px] text-[#0a0416] disabled:opacity-50 active:scale-[0.98] transition-all"
+                    style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+                  >
+                    {photoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                    {photoBusy ? "جارٍ قراءة الصورة…" : "التقاط صورة للرمز بكاميرا الجهاز"}
+                  </button>
+                  {inIframe && (
+                    <button
+                      type="button"
+                      onClick={openStandalone}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-xl font-tajawal font-bold text-[11px] text-umi-teal bg-umi-teal/10 border border-umi-teal/25"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> فتح التطبيق في تبويب جديد لتفعيل الكاميرا الحية
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setCamErr(""); setScanKey((k) => k + 1); }}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 h-8 rounded-xl font-tajawal text-[10.5px] text-umi-muted"
+                  >
+                    <RefreshCw className="w-3 h-3" /> إعادة محاولة الكاميرا الحية
+                  </button>
+                </div>
               </div>
             </div>
           )}
+
+          {/* التقاط صورة للرمز — يعمل داخل المعاينة المدمجة (يفتح كاميرا النظام) */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) decodePhoto(f);
+            }}
+          />
 
           {/* الإدخال اليدوي — بديل دائم أسفل الكاميرا */}
           <div className="absolute bottom-5 inset-x-0 px-5">
