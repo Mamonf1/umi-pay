@@ -162,6 +162,7 @@ model CurrencySettings {
   pointSyp        Float    @default(10)
   loanMonthlyRate Float    @default(1.5) // نسبة التطبيق من القروض شهرياً — بالمئة
   cardFeeRate     Float    @default(3.5) // نسبة استعمال بطاقة الاعتماد — بالمئة
+  rateApiKey      String?  // مفتاح خدمة أسعار الصرف (اختياري) — يُستخدم قبل المصدر المجاني
   updatedAt       DateTime @updatedAt
 }
 
