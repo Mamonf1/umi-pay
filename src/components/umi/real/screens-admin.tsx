@@ -186,7 +186,10 @@ function PricingTab({ me, data, reload }: { me: Me; data: AdminData | null; relo
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [syncData, setSyncData] = useState<{ fetched: number; current: number; source: string; sourceTime: string | null } | null>(null);
+  const [syncData, setSyncData] = useState<{ fetched: number; current: number; source: string; sourceTime: string | null; note?: string | null; hasKey?: boolean } | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [keyBusy, setKeyBusy] = useState(false);
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (data) { setUsd(String(Math.round(data.settings.usdSyp))); setPoint(String(Math.round(data.settings.pointSyp))); }
@@ -211,15 +214,33 @@ function PricingTab({ me, data, reload }: { me: Me; data: AdminData | null; relo
   const fetchFromSource = async () => {
     setSyncing(true); setErr(""); setMsg(""); setSyncData(null);
     try {
-      const r = await api<{ fetched: number; current: number; source: string; sourceTime: string | null }>("/api/umi/admin/sync-rate", {
+      const r = await api<{ fetched: number; current: number; source: string; sourceTime: string | null; note?: string | null; hasKey?: boolean }>("/api/umi/admin/sync-rate", {
         method: "POST",
         body: JSON.stringify({ adminId: me.id }),
       });
       setSyncData(r);
+      if (typeof r.hasKey === "boolean") setHasKey(r.hasKey);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const manageKey = async (action: "saveKey" | "clearKey") => {
+    setKeyBusy(true); setErr(""); setMsg("");
+    try {
+      const r = await api<{ message: string }>("/api/umi/admin/sync-rate", {
+        method: "POST",
+        body: JSON.stringify({ adminId: me.id, action, apiKey: apiKeyInput }),
+      });
+      setMsg(r.message);
+      setHasKey(action === "saveKey");
+      setApiKeyInput("");
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setKeyBusy(false);
     }
   };
 
@@ -300,6 +321,34 @@ function PricingTab({ me, data, reload }: { me: Me; data: AdminData | null; relo
             </div>
           </div>
         )}
+
+        {/* مفتاح SP-Today API — أسعار السوق السوري */}
+        <div className="mt-3 rounded-xl p-3" style={{ border: "1px solid rgba(232,199,102,0.25)", background: "rgba(232,199,102,0.04)" }}>
+          <p className="text-[10.5px] font-tajawal font-bold text-umi-gold mb-1">
+            مفتاح SP-Today API {hasKey ? "· محفوظ ✓" : "(اختياري)"}
+          </p>
+          <p className="text-[9px] font-tajawal text-umi-muted leading-relaxed mb-2">
+            إن أضفت مفتاح خدمة SP-Today (أسعار السوق السوري) سيعتمد أولاً عند المزامنة، وعند تعطله يستخدم المصدر الرسمي تلقائياً
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value.trim())}
+              placeholder={hasKey ? "مفتاح محفوظ — أدخل جديداً لاستبداله" : "الصق المفتاح هنا"}
+              dir="ltr"
+              className="flex-1 h-9 rounded-lg bg-white/5 border border-white/10 px-3 text-left font-cairo text-[10px] text-umi-cream placeholder:text-umi-muted/40 outline-none focus:border-umi-gold/40"
+            />
+            <button
+              type="button"
+              disabled={keyBusy || (!apiKeyInput.trim() && !hasKey)}
+              onClick={() => manageKey(apiKeyInput.trim() ? "saveKey" : "clearKey")}
+              className="h-9 px-3 rounded-lg font-tajawal font-bold text-[10px] text-[#0a0416] disabled:opacity-40 shrink-0"
+              style={{ background: "linear-gradient(135deg,#f5dfa0,#e8c766)" }}
+            >
+              {keyBusy ? "…" : apiKeyInput.trim() ? "حفظ" : hasKey ? "إزالة" : "حفظ"}
+            </button>
+          </div>
+        </div>
 
         <div className="umi-shimmer-line my-3.5" />
 
