@@ -17,7 +17,7 @@ import { TransactionDetailSheet, ReportsScreen } from "@/components/umi/real/scr
 import { api } from "@/lib/umi-client";
 import { RatesProvider } from "@/lib/rates";
 import { AdminScreen } from "@/components/umi/real/screens-admin";
-import { UmiLogo } from "@/components/umi/logo";
+import { SplashScreen } from "@/components/umi/real/splash";
 import type { HomeData, Me } from "@/lib/umi-types";
 
 type Overlay = "topup" | "history" | "profile" | "qr" | "tamayuz" | "about" | "scan" | "tx" | "reports" | null;
@@ -53,14 +53,29 @@ function UmiAppInner() {
     }
   }, []);
 
-  // استعادة الجلسة
+  // استعادة الجلسة — شاشة البداية تبقى ظاهرة 1.4 ثانية كحد أدنى (هوية الإقلاع)
+  // وصافحة أمان: إن تعلق الطلب بأي سبب يخرج الإقلاع تلقائياً بعد 7 ثوانٍ كحد أقصى
   useEffect(() => {
+    const startedAt = Date.now();
+    let done = false;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const left = 1400 - (Date.now() - startedAt);
+      pending = setTimeout(() => setBooting(false), Math.max(0, left));
+    };
+    const safety = setTimeout(finish, 7000); // مهلة قصوى — لا تعليق أبدي
     const t = setTimeout(() => {
       const uid = localStorage.getItem("umi_uid");
-      if (uid) loadHome(uid).finally(() => setBooting(false));
-      else setBooting(false);
+      if (uid) loadHome(uid).finally(finish);
+      else finish();
     }, 0);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(safety);
+      if (pending) clearTimeout(pending);
+    };
   }, [loadHome]);
 
   const login = useCallback(
@@ -102,11 +117,7 @@ function UmiAppInner() {
   /* ============ الشاشة الحالية ============ */
   let screen: React.ReactNode;
   if (booting) {
-    screen = (
-      <div className="min-h-[100dvh] grid place-items-center bg-umi-bg">
-        <UmiLogo size={72} />
-      </div>
-    );
+    screen = <SplashScreen />;
   } else if (!meData) {
     screen = <LoginScreen onLogin={login} onOpenAbout={() => setOverlay("about")} />;
   } else if (isAdmin) {
